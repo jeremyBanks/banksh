@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="/icon.png" />
+<link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}" />
+
+<style>
+    header#header.page-header {
+        padding: .5em;
+    }
+
+    div.highlight > pre.highlight {
+        background: white;
+        padding-left: 32px;
+    }
+
+    div.highlight > pre.highlight > code > span.c {
+        color: #606c71;
+        font-style: normal;
+        /* font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 1.1rem; */
+        left: -1.5rem;
+        top: -0.5rem;
+        position: relative;
+        display: inline-block;
+        margin-top: 1rem;
+    }
+
+    div.highlight > pre.highlight > code > span.c + span.c {
+        margin-top: 0;
+    }
+
+    div.highlight > pre.highlight > code > span.c::before {
+        content: "#";
+        display: block;
+        color: transparent;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.875);
+    }
+
+    div.highlight > pre.highlight > code > span.c ::first-letter {
+        color: rgba(0, 0, 0, 0.125);
+    }
+
+    header#header.page-header > h1.project-name {
+        font-size: 2.0rem;
+    }
+
+    main#content {
+        padding-top: 1rem;
+    }
+
+    main#content > p:first-child {
+        color: rgba(0, 0, 0, 0.125);
+    }
+
+    main#content > p:first-child a {
+        color: rgba(0, 0, 0, 0.25);
+    }
+
+    main#content > p + h1:first-of-type {
+        margin-top: 0;
+    }
+
+    main#content > h1:first-of-type + p {
+        margin-left: 2em;
+    }
+</style>
+
+<header id="header" class="page-header" role="banner">
+    <h1 class="project-name">bash ideas</h1>
+</header>
+
+<main id="content" class="main-content">
+    {{ content }}
+</main>
