@@ -1,0 +1,21 @@
+{
+    "editor.tabSize": 2,
+    "editor.detectIndentation": false,
+    "editor.wrappingIndent": "indent",
+    "editor.wordWrapColumn": 80,
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.renderWhitespace": "boundary",
+    "editor.fontFamily": "\"JetBrains Mono\", Consolas, monospace",
+    "shellcheck.customArgs": [
+      "-x"
+    ],
+    "files.exclude": {
+      "{_,.}*": true,
+      "CNAME": true,
+      "icon.png": true,
+      "ideas/*.{md,txt}": true
+    },
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true
+}

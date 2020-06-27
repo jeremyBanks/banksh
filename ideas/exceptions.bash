@@ -6,9 +6,9 @@ Typed Exceptions with Stack Traces in Bash
 
 by Jeremy Banks, July 2020 ([hire me!])
 
-With the typical `-euo pipefail` error options enabled, unhandled errors in 
+With the typical `-euo pipefail` error options enabled, unhandled errors in
 Bash scripts are propagated up the call stack until they're handled or exit the
-script (see [details below][A1] if you're unfamiliar). However, the only 
+script (see [details below][A1] if you're unfamiliar). However, the only
 associated data is the exit status code: less than a byte of information. If
 you want to handle different types of errors separately, you may find yourself
 writing a lot of boilerplate. I'd like to present an alternative.
@@ -20,7 +20,7 @@ blocks, error "types", and stack traces.
 ```sh
 function example-1 {
   try
-    local contents=fread "$1"
+    declare contents=fread "$1"
   catch "IOError"
     echo "Are you sure entered that path correctly? $(caught)"
     exit 1
@@ -81,8 +81,8 @@ CommandError/cat/1: command 'cat /bad/path/' returned non-zero exit status 1
 
 ([More examples below][examples].)
 
-Exceptions are just strings, and their "types" are just prefixes like 
-"TypeError". The exception throwing/catching state is stored in a global 
+Exceptions are just strings, and their "types" are just prefixes like
+"TypeError". The exception throwing/catching state is stored in a global
 variable, and is propagated using Bash's normal error handling, until it's
 handled like a normal error or by a matching `try-catch-ryt` block. We use
 Bash traps to reset the exception state if an error is handled outside of a
@@ -94,7 +94,7 @@ Implementation in [`exceptions.bash`][2]
 ```bash
 
 # Environment
-{ 
+{
   # Enable typical Bash error handling.
   set -euo pipefail
 
@@ -109,9 +109,9 @@ Implementation in [`exceptions.bash`][2]
 }
 
 # Utility functions
-{ 
+{
   # Returns the specified exit status, implicitly setting $?. Does nothing else.
-  # 
+  #
   # Used to set the exit status of a block explicitly without returning or
   # exiting from the enclosing function or subshell.
   function ?= {
@@ -123,7 +123,7 @@ Implementation in [`exceptions.bash`][2]
     function __red__ {
       printf "%s%s%s" "$(tput setaf 1 || :)" "$*" "$(tput sgr0 || :)"
     }
-  else 
+  else
     function __red__ {
       printf "%s" "$*"
     }
@@ -131,32 +131,34 @@ Implementation in [`exceptions.bash`][2]
 }
 
 # Internal exception state and functions
-{ 
+{
   # We "throw" an exception by setting these global variables.
-  declare -g __THROWN_MESSAGE__=""
-  declare -g __THROWN_STACK__=""
+  declare __THROWN_MESSAGE__=""
+  declare __THROWN_STACK__=""
 
   # We "catch" by unsetting those and moving the values here instead.
-  declare -g __CAUGHT_MESSAGE__=""
-  declare -g __CAUGHT_STACK__=""
+  declare __CAUGHT_MESSAGE__=""
+  declare __CAUGHT_STACK__=""
 
   function __capture__exception__ {
     echo ""
 
-    # arbitrary value, but ideally   
+    # Arbitrary exit status, but ideally one that will stand out.
     return 69
   }
 
   function __on_err__ {
-    return "$?"
+    declare -r status="$?"
+
+
   }
 
   function __on_return__ {
-    return "$?"
+    declare -r status="$?"
   }
 
   function __on_exit__ {
-    return "$?"
+    declare -r status="$?"
   }
 
   trap __on_err__ ERR
@@ -168,40 +170,51 @@ Implementation in [`exceptions.bash`][2]
 {
   alias throw='{ __THROWN_MESSAGE__="$(cat -) [at $(caller 0)]"; return 69; } <<<'
 
+  function throw {
+    declare -r status="$?"
+    __THROWN_MESSAGE__
+  }
+
+  # Our try-catch-yrt syntax wraps a block with a check for that status code
+  # being returned with __THROWN_MESSAGE__ set. If so, the __catch_or_rethrow__ function
+  # is used to compare the __THROWN_MESSAGE__ value to the caught prefix. If there's a
+  # match, the catch block is run the error is suppressed. If it doesn't match,
+  # the exception is re-thrown. If the try block exits with a non-zero exit
+  # status, but no exception it is normalized to an exit status of 1 (TODO:
+  # preserve instead?) and propagated.
+  alias try='if { '
+  alias catch=' } || [[ $? = 69 && $__THROWN_MESSAGE__ ]]; then { __catch_or_rethrow__ '
+  alias yrt='}; else return 1; fi'
+  function __catch_or_rethrow__ {
+    declare exception_prefix="${1:-}"
+    if ! [[ $__THROWN_MESSAGE__ ]]; then
+      echo "$(__red__ FatalError: __catch_or_rethrow__ called but nothing thrown)" >&2
+      exit 1
+    elif [[ $__THROWN_MESSAGE__ == $exception_prefix* ]]; then
+      __CAUGHT_MESSAGE__="$__THROWN_MESSAGE__"
+      __THROWN_MESSAGE__=
+      return 0
+    else
+      # re-throw
+      return 69
+    fi
+  }
+  # Use the $(caught) function to reference to the exception in a catch block.
+  function caught {
+    if [[ $__CAUGHT_MESSAGE__ ]]; then
+      printf "%s" "$__CAUGHT_MESSAGE__"
+    else
+      printf "RuntimeError: caught called outside of catch block"
+    fi
+  }
 }
 
-# Our try-catch-yrt syntax wraps a block with a check for that status code
-# being returned with __THROWN_MESSAGE__ set. If so, the __catch_or_rethrow__ function
-# is used to compare the __THROWN_MESSAGE__ value to the caught prefix. If there's a
-# match, the catch block is run the error is suppressed. If it doesn't match,
-# the exception is re-thrown. If the try block exits with a non-zero exit
-# status, but no exception it is normalized to an exit status of 1 (TODO:
-# preserve instead?) and propagated.
-alias try='if { '
-alias catch=' } || [[ $? = 69 && $__THROWN_MESSAGE__ ]]; then { __catch_or_rethrow__ '
-alias yrt='}; else return 1; fi'
-function __catch_or_rethrow__ {
-  local exception_prefix="${1:-}"
-  if ! [[ $__THROWN_MESSAGE__ ]]; then
-    echo "$(__red__ FatalError: __catch_or_rethrow__ called but nothing thrown)" >&2
-    exit 1
-  elif [[ $__THROWN_MESSAGE__ == $exception_prefix* ]]; then
-    __CAUGHT_MESSAGE__="$__THROWN_MESSAGE__"
-    __THROWN_MESSAGE__=
-    return 0
-  else
-    # re-throw
-    return 69
-  fi
-}
-# Use the $(caught) function to reference to the exception in a catch block.
-function caught {
-  if [[ $__CAUGHT_MESSAGE__ ]]; then
-    printf "%s" "$__CAUGHT_MESSAGE__"
-  else
-    printf "RuntimeError: caught called outside of catch block"
-  fi
-}
+# If this file has been sourced for use as a library, we're done, return now.
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+  return 0
+fi
+
+# Otherwise, it has been run directly, so we'll continue and run the examples.
 
 :<<'```bash' pardon the mess
 ```
@@ -248,7 +261,7 @@ function format_percent {
   if (( $1 > 100 )); then
     throw "RangeError: argument 1 was too large, expected <= 100, got: $1"
   fi
-  
+
   echo "$1%"
 }
 
@@ -269,7 +282,7 @@ Caveats
 
 This is a gross hack. Don't hold me responsible if you use it in prod code.
 
-This implementation doesn't account for sub-shells (which are created almost 
+This implementation doesn't account for sub-shells (which are created almost
 any time you use parantheses in Bash). The errors will still be propagated but
 the exception message and stack trace will be lost.
 
@@ -290,6 +303,7 @@ To Do
 - add an exit hook displaying an uncaught stack trace
 - concatenate stack traces if one error occurs while handling another
 - make it look like python
+- minimize use of aliases
 
 Are you hiring? I'm looking!
 ----------------------------
@@ -299,7 +313,7 @@ I am currently looking for a new position as a software developer.
 I have 8 years experience, including at Google and Stack Overflow. I've mostly
 done full-stack web development (including TypeScript, Python, React, Django,
 and some C# ASP.NET), with a recent focus in developer tools. I'd be happy to
-do more of that, but would also be excited by an opportunity to work 
+do more of that, but would also be excited by an opportunity to work
 professionally with Rust, which I've used for some side projects but nothing
 serious. I'm more interested in finding a good fit than a top salary.
 
@@ -314,7 +328,7 @@ Appendix 1: Bash manual description of `-e`/`-o errexit` setting
 When I refer to regular Bash error handling above, I am referring to the
 various ways a command's failure (nonzero exit status) can be suppressed,
 instead of exiting the script, while the `-e`/`-o errexit` setting is enabled.
-These are described below in the Bash manual's description of the setting.   
+These are described below in the Bash manual's description of the setting.
 
 > Exit immediately if a pipeline (which may consist of a single simple command),
 > a list, or a compound command (see SHELL GRAMMAR above), exits with a non-zero
@@ -335,7 +349,7 @@ These are described below in the Bash manual's description of the setting.
 > function body will be affected by the `-e` setting, even if `-e` is set and a
 > command returns a failure status. If a compound command or shell function sets
 > `-e` while executing in a context where `-e` is ignored, that setting will not
-> have any effect until the compound command or the command containing the 
+> have any effect until the compound command or the command containing the
 > function call completes.
 
 <!-- link targets -->
