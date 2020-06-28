@@ -118,14 +118,28 @@ Implementation in [`exceptions.bash`][2]
     return "${1?}"
   }
 
-  # Enable __red__ coloring if stdin is a terminal unless NO_COLOR is set.
-  if tty > /dev/null && [[ ! ${NO_COLOR+set} ]]; then
-    function __red__ {
-      echo "$(tput setaf 1 || :)$*$(tput sgr0 || :)"
+  # Enable __color__ if stdio is all-terminal and NO_COLOR is not set.
+  if [[ -t 0 && -t 1 && -t 2 ]] && [[ ! ${NO_COLOR+set} ]]; then
+    function __color__ {
+      declare -n color="__color_${1}__"
+      if [[ ! ${color+set} ]]; then
+        throw ValueError: "invalid color name: $1"
+      fi
+      echo "$__style_reset__${color}${*:2}$__style_reset__"
     }
+
+    declare -r __color_black__="$(tput setaf 0 || :)"
+    declare -r __color_red__="$(tput setaf 1 || :)"
+    declare -r __color_green__="$(tput setaf 2 || :)"
+    declare -r __color_yellow__="$(tput setaf 3 || :)"
+    declare -r __color_blue__="$(tput setaf 4 || :)"
+    declare -r __color_magenta__="$(tput setaf 5 || :)"
+    declare -r __color_cyan__="$(tput setaf 6 || :)"
+    declare -r __color_white__="$(tput setaf 7 || :)"
+    declare -r __style_reset__="$(tput sgr0 || :)"
   else
-    function __red__ {
-      echo "$*"
+    function __color__ {
+      echo "${*:2}"
     }
   fi
 }
@@ -149,7 +163,9 @@ Implementation in [`exceptions.bash`][2]
     declare -r status="$1"
 
     if [[ ! $__thrown_message__ ]]; then
-      __status__ "$?" || throw
+      __status__ "$status" || throw
+    else
+      __status__ "$status"
     fi
   }
 
@@ -158,14 +174,11 @@ Implementation in [`exceptions.bash`][2]
   # problem; we clear it here.
   trap '{
     declare __return_status__="$?"
-
     if [[ $__return_status__ = 0 && ( $__thrown_message__ || $__thrown_stack__ ) ]]; then
       __thrown_message__=""
       __thrown_stack__=""
     fi
-
-    __status__ "$__return_status__"
-  }' RETURN
+  };' RETURN
 
   # If the script exits with an error, we display the unahndled exception and
   # stack trace, if known, else a simple error message.
@@ -175,13 +188,13 @@ Implementation in [`exceptions.bash`][2]
 
     if [[ $status != 0 ]]; then
       if [[ $__thrown_message__ || $__thrown_stack__ ]]; then
-        __red__ "$__thrown_stack__"$'\n'"$__thrown_message__" >&2
+        __color__ red "$__thrown_stack__"$'\n'"$__thrown_message__" >&2
       else
-        __red__ "Failed with exit status $status." >&2
+        __color__ red "Failed with exit status $status." >&2
       fi
     fi
 
-    return "$status"
+    __status__ "$status"
   }
 }
 
@@ -248,17 +261,19 @@ $stack"
   # the exception is re-thrown. If the try block exits with a non-zero exit
   # status, but no exception it is normalized to an exit status of 1 (TODO:
   # preserve instead?) and propagated.
-  alias try='if { '
-  alias catch=' } || [[ $? = 69 && $__thrown_message__ ]]; then { __catch_or_rethrow__ '
-  alias yrt='}; else return 1; fi'
+  alias try='{'
+  alias catch='} || { __catch_or_rethrow__ '
+  alias yrt='}'
   function __catch_or_rethrow__ {
     declare exception_prefix="${1:-}"
     if [[ ! $__thrown_message__ ]]; then
-      __red__ FatalError: __catch_or_rethrow__ called but nothing thrown >&2
+      __color__ red FatalError: __catch_or_rethrow__ called but nothing thrown >&2
       exit 1
     elif [[ $__thrown_message__ == $exception_prefix* ]]; then
       __caught_message__="$__thrown_message__"
-      __thrown_message__=
+      __caught_stack__="$__thrown_stack__"
+      __thrown_message__=""
+      __thrown_stack__=""
       return 0
     else
       # re-throw
@@ -283,18 +298,22 @@ fi
 
 # Otherwise, it has been run directly, so we'll continue and run the examples.
 
-:<<'```bash' pardon the mess
+
+:<<'source ./exceptions.bash' pardon the mess
 ```
 
 Examples in [`exceptions.bash`][2]
 ----------------------------------
 
 ```bash
+source ./exceptions.bash
+
+
 function examples {
   try
     example-1
-  catch "ExampleError"
-    throw UhOhError: "I caught a <$(caught)> but I don't know what to do with it!"
+  catch ""
+    throw UhOhError: "caught an exception ($(caught)), what do I do? oh no!"
   yrt
 }
 
@@ -302,44 +321,9 @@ function example-1 {
   throw ExampleError: oh noes
 }
 
-function example_1 {
-  try
-    format_percent "hello world"
-  catch "RangeError"
-    echo "Oh no, a value was out-of-range! Details: $(caught)"
-  yrt
-}
-
-# Here's an example that throws different "types" of exceptions depending on
-# the way the input is invalid.
-#
-# This function "formats" a percentage value (integer between 0 and 100) by
-# printing it with a % character appended.
-function format_percent {
-  if [[ ${#@} != 1 ]]; then
-    throw "ArgumentError: expected 1 argument, got: ${#@}"
-  fi
-  if ! [[ $1 =~ ^[0-9]+$ ]]; then
-    throw "TypeError: expected integer for argument 1, got: $1"
-  fi
-  if (( "$1" < 0 )); then
-    throw "RangeError: argument 1 was too small, expected >= 0, got: $1"
-  fi
-  if (( "$1" > 100 )); then
-    throw "RangeError: argument 1 was too large, expected <= 100, got: $1"
-  fi
-
-  echo "$1%"
-}
-
-function grandchild {
-  format_percent 100
-  format_percent 99
-  format_percent 0
-  format_percent 101
-}
-
+# Run the examples.
 examples
+
 
 :<<'<!-- -->' pardon the mess
 ```
