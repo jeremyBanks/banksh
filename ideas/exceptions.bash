@@ -155,38 +155,42 @@ Implementation in [`exceptions.bash`][2]
 # Private exception state and functions
 {
   # We "throw" an exception by setting these global variables.
+  declare -i __thrown_status__=0
   declare __thrown_message__=""
   declare __thrown_stack__=""
 
   # We "catch" by unsetting those and moving the values here instead.
+  declare -i __caught_status__=0
   declare __caught_message__=""
   declare __caught_stack__=""
 
   # Original working directory, required to resolve relative source paths.
   declare -r __owd__="$(realpath "$(pwd)")"
 
-  # If an error is unhandled, throw an anonymous exception.
-  trap '__on_err__ $?' ERR
+  # If an error is unhandled, throw an anonymous exception
+  trap '__on_err__ "$?" "$BASH_COMMAND"' ERR
   function __on_err__ {
     declare -r status="$1"
+    declare -r command="$2"
 
-    if [[ ! $__thrown_message__ ]]; then
-      __status__ "$status" || throw
-    else
-      __status__ "$status"
+    if (( __thrown_status__ = 0 )); then
+      __status__ "$status" || throw CommandError: "Command '$command' failed with status $status"
     fi
+
+    return "$status"
   }
 
   # If a function returns successfully, but an exception is still set, that
   # means an error was handle without using a catch block. That's not a
   # problem; we clear it here.
   trap '{
-    declare __return_status__="$?"
-    if [[ $__return_status__ = 0 && ( $__thrown_message__ || $__thrown_stack__ ) ]]; then
+    __returned_status__="$?"
+    if (( __returned_status__ = 0 )); then
+      __thrown_status__=0
       __thrown_message__=""
       __thrown_stack__=""
     fi
-  };' RETURN
+  }' RETURN
 
   # If the script exits with an error, we display the unahndled exception and
   # stack trace, if known, else a simple error message.
@@ -195,21 +199,24 @@ Implementation in [`exceptions.bash`][2]
     declare -r status="$1"
 
     if [[ $status != 0 ]]; then
-      if [[ $__thrown_message__ || $__thrown_stack__ ]]; then
+      if [[ $__thrown_message__ ]]; then
         echo "$__thrown_stack__"$'\n'"$(__style__ bold "$__thrown_message__")" >&2
       else
-        __style__ red "Failed with exit status $(__style__ underline "$status")." >&2
+        __style__ red "Failed with exit status $status." >&2
       fi
     fi
 
-    __status__ "$status"
+    return "$status"
   }
 }
 
 # Public exception syntax
 {
+  # The `throw` function allows you to raise an exception with a specific
+  # type/message. It should be called in this style:
+  #   throw SomeTypeOfError: "a string message"
   function throw {
-    declare -r status="$?"
+    declare -i status="$?"
 
     declare message="$*"
     declare stack
@@ -236,11 +243,12 @@ Implementation in [`exceptions.bash`][2]
       fi
       stack+="$(
         cd "$__owd__";
-        declare line_content="$(
+        declare line_content
+        line_content="$(
           awk -v n="$line" "NR == n" "$file" | sed -e 's/^ *//' || :)";
         if [[ $line_content ]]; then
           echo
-          echo "    $(__style__ bold "$line_content")"
+          echo "    $line_content"
         fi
       )";
     done
@@ -254,34 +262,38 @@ During handling of the above exception, another exception occurred:
 $stack"
     fi
 
+    if [[ $status == 0 ]]; then
+      status=69
+    fi
+
     __thrown_message__="$message"
     __thrown_stack__="$stack"
+    __thrown_status__="$status"
 
-    if [[ $status != 0 ]]; then
-      return "$status"
-    else
-      return 69
-    fi
+    return "$status"
   }
 
   # Our try-catch-yrt syntax wraps a block with a check for that status code
-  # being returned with __thrown_message__ set. If so, the __catch_or_rethrow__ function
+  # being returned with __thrown_message__ set. If so, the __catch_or_raise__ function
   # is used to compare the __thrown_message__ value to the caught prefix. If there's a
   # match, the catch block is run the error is suppressed. If it doesn't match,
   # the exception is re-thrown. If the try block exits with a non-zero exit
   # status, but no exception it is normalized to an exit status of 1 (TODO:
   # preserve instead?) and propagated.
   alias try='{'
-  alias catch='} || { __catch_or_rethrow__ '
+  alias catch='} || { __catch_or_raise__ '
+  alias finally='FINALLY IS NOT IMPLEMENTED'
   alias yrt='}'
-  function __catch_or_rethrow__ {
+  function __catch_or_raise__ {
     declare exception_prefix="${1:-}"
-    if [[ ! $__thrown_message__ ]]; then
-      __style__ red FatalError: __catch_or_rethrow__ called but nothing thrown >&2
+    if (( __thrown_status__ == 0 )); then
+      __style__ red FatalError: __catch_or_raise__ called but nothing thrown >&2
       exit 1
     elif [[ $__thrown_message__ == $exception_prefix* ]]; then
+      __caught_status__="$__thrown_status__"
       __caught_message__="$__thrown_message__"
       __caught_stack__="$__thrown_stack__"
+      __thrown_status__=0
       __thrown_message__=""
       __thrown_stack__=""
       return 0
@@ -290,7 +302,8 @@ $stack"
       return 69
     fi
   }
-  # Use the $(caught) function to reference to the exception in a catch block.
+
+  # Use the $(caught) function to get the exception message in a catch block.
   function caught {
     if [[ $__caught_message__ ]]; then
       echo "$__caught_message__"
@@ -372,6 +385,10 @@ throw((
 ))
 ```
 
+We would extend the `caught` function to accept an optional second argument,
+such as `$(caught exit-status)`, or `$(caught stack-trace)`, maintaing the
+default `$(caught)` as equivalent to `$(caught message)`.
+
 ### Implement this as a patch for Bash itself
 
 I've never looked at Bash's source code, but this feature isn't too complicated,
@@ -387,11 +404,12 @@ To Do (before publishing this post)
 - can we support immediately-thown exceptions? maybe we already do now? test it.
 - update initial examples, consider screenshots.
 - preserve exit status of captured stuff
+- test behaviour with -c command line or stdin scripts -- do we break?
 
 Are you hiring? I'm looking!
 ----------------------------
 
-I am currently looking for a new position as a software developer.
+I'm looking for a new full-time permanent position as a software developer.
 
 I have 8 years experience, including at Google and Stack Overflow. I've mostly
 done full-stack web development (including TypeScript, Python, React, Django,
@@ -400,7 +418,8 @@ do more of that, but would also be excited by an opportunity to work
 professionally with Rust, which I've used for some side projects but nothing
 serious. I'm more interested in finding a good fit than a top salary.
 
-I'm located in Toronto, Canada but would prefer a remote position.
+I'm located in Toronto, Canada but would prefer a remote or mostly-remote
+position.
 
 Check out my profile on LinkedIn at <https://linkedin.com/in/jeremy-banks/>
 or email me at <mailto:_@jeremy.ca> or <mailto:jeb@hey.com>.
