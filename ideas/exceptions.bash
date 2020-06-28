@@ -9,10 +9,11 @@ by Jeremy Banks, July 2020 ([hire me!])
 With the typical `-euo pipefail` error options enabled, unhandled errors in
 Bash scripts are propagated up the call stack until they're handled or exit the
 script (see [details below][A1] if you're unfamiliar). However, the only
-associated data is the exit status code: less than a byte of information. If
-you want to handle different types of errors separately, you may find yourself
-writing a lot of boilerplate. I'd like to present an alternative.
+associated data is the exit status code: less than a byte of information. This
+works, but if you want to handle different types of errors separately, you may
+find yourself writing a lot of boilerplate.
 
+With a relatively modern version of Bash and some creativity, we can do better.
 This is a proof-of-concept using aliases, traps, and functions to provide a
 implementation of exception-style error handling in Bash, with `try-catch`
 blocks, error "types", and stack traces.
@@ -191,7 +192,7 @@ Implementation in [`exceptions.bash`][2]
 
     if [[ $status != 0 ]]; then
       if [[ $__thrown_message__ || $__thrown_stack__ ]]; then
-        echo "$__thrown_stack__"$'\n'"$(__style__ red-bold "$__thrown_message__")" >&2
+        echo "$__thrown_stack__"$'\n'"$(__style__ bold "$__thrown_message__")" >&2
       else
         __style__ red "Failed with exit status $(__style__ underline "$status")." >&2
       fi
@@ -217,31 +218,27 @@ Implementation in [`exceptions.bash`][2]
       fi
     fi
 
-    declare -i i=0
-    while true; do
-      declare caller
-      caller="$(caller $i)" || break
-      [[ $caller =~ ^((.*) (.*) (.*))$ ]]
-      declare line="${BASH_REMATCH[2]}"
-      declare command="${BASH_REMATCH[3]}"
-      declare file="${BASH_REMATCH[4]}"
-      stack+=$'\n'"  File \"$file\", line $line, in $(__style__ yellow $command)"
+    declare -i i
+    for ((i = 0; i < ${#FUNCNAME[@]}; i += 1)); do
+      declare -i j=$(($i + 1))
+      declare line="${BASH_LINENO[$i]}"
+      declare command="${FUNCNAME[$i]}"
+      declare file="${BASH_SOURCE[$i]}"
+      stack+=$'\n'"  File \"$file\", line $line, in $(__style__ yellow "$command")"
       stack+="$(
         cd "$__owd__";
-        declare line_content
-        line_content="$(awk -v n="$line" "NR == n" "$file" | sed -e 's/^ *//' || :)";
+        declare line_content="$(
+          awk -v n="$line" "NR == n" "$file" | sed -e 's/^ *//' || :)";
         if [[ $line_content ]]; then
           echo
           echo "    $(__style__ bold "$line_content")"
         fi
       )";
-
-      i+=1
     done
 
     if [[ $__caught_message__ ]]; then
       stack="$__caught_stack__
-$(__style__ red "$__caught_message__")
+$(__style__ bold "$__caught_message__")
 
 During handling of the above exception, another exception occurred:
 
@@ -352,13 +349,10 @@ Syntax error messages are gibberish.
 To Do
 -----
 
-- capture full stack trace
-- add colors
-- Do we use the ERR hook to add this even for non-exceptions?
-- add an exit hook displaying an uncaught stack trace
-- concatenate stack traces if one error occurs while handling another
-- make it look like python
-- minimize use of aliases
+- catch different exception types
+- finally block
+- test what happens with sub-shells.
+- can we support immediately-thown exceptions? maybe we already do now?
 
 Are you hiring? I'm looking!
 ----------------------------
