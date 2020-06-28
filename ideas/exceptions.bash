@@ -118,27 +118,30 @@ Implementation in [`exceptions.bash`][2]
     return "${1?}"
   }
 
-  # Enable __color__ if stdio is all-terminal and NO_COLOR is not set.
+  # Enable __style__ if stdio is all-terminal and NO_COLOR is not set.
   if [[ -t 0 && -t 1 && -t 2 ]] && [[ ! ${NO_COLOR+set} ]]; then
-    function __color__ {
-      declare -n color="__color_${1}__"
-      if [[ ! ${color+set} ]]; then
-        throw ValueError: "invalid color name: $1"
-      fi
-      echo "$__style_reset__${color}${*:2}$__style_reset__"
+    function __style__ {
+      printf "%s" "$__style_reset__"
+      declare names
+      names=${1//-/ }
+      for name in $names; do
+        declare -n color="__style_${name}__"
+        if [[ ! ${color+set} ]]; then
+          throw ValueError: "invalid color name: $name"
+        fi
+        printf "%s" "$color"
+      done
+      printf "%s" "${*:2}"
+      printf "%s\n" "$__style_reset__"
     }
 
-    declare -r __color_black__="$(tput setaf 0 || :)"
-    declare -r __color_red__="$(tput setaf 1 || :)"
-    declare -r __color_green__="$(tput setaf 2 || :)"
-    declare -r __color_yellow__="$(tput setaf 3 || :)"
-    declare -r __color_blue__="$(tput setaf 4 || :)"
-    declare -r __color_magenta__="$(tput setaf 5 || :)"
-    declare -r __color_cyan__="$(tput setaf 6 || :)"
-    declare -r __color_white__="$(tput setaf 7 || :)"
+    declare -r __style_red__="$(tput setaf 1 || :)"
+    declare -r __style_yellow__="$(tput setaf 3 || :)"
+    declare -r __style_bold__="$(tput bold || :)"
+    declare -r __style_underline__="$(tput smul || :)"
     declare -r __style_reset__="$(tput sgr0 || :)"
   else
-    function __color__ {
+    function __style__ {
       echo "${*:2}"
     }
   fi
@@ -188,9 +191,9 @@ Implementation in [`exceptions.bash`][2]
 
     if [[ $status != 0 ]]; then
       if [[ $__thrown_message__ || $__thrown_stack__ ]]; then
-        __color__ red "$__thrown_stack__"$'\n'"$__thrown_message__" >&2
+        echo "$__thrown_stack__"$'\n'"$(__style__ red-bold "$__thrown_message__")" >&2
       else
-        __color__ red "Failed with exit status $status." >&2
+        __style__ red "Failed with exit status $(__style__ underline "$status")." >&2
       fi
     fi
 
@@ -204,7 +207,8 @@ Implementation in [`exceptions.bash`][2]
     declare -r status="$?"
 
     declare message="$*"
-    declare stack="Traceback (most recent call last):"
+    declare stack
+    stack="$(__style__ red-underline "Traceback (most recent call last):")"
 
     if [[ ! $message ]]; then
       message="UnknownError"
@@ -221,14 +225,14 @@ Implementation in [`exceptions.bash`][2]
       declare line="${BASH_REMATCH[2]}"
       declare command="${BASH_REMATCH[3]}"
       declare file="${BASH_REMATCH[4]}"
-      stack+=$'\n'"  File \"$file\", line $line, in $command"
+      stack+=$'\n'"  File \"$file\", line $line, in $(__style__ yellow $command)"
       stack+="$(
         cd "$__owd__";
         declare line_content
-        line_content="$(awk -v n="$line" "NR == n" "$file" || :)";
+        line_content="$(awk -v n="$line" "NR == n" "$file" | sed -e 's/^ *//' || :)";
         if [[ $line_content ]]; then
           echo
-          echo "    $line_content"
+          echo "    $(__style__ bold "$line_content")"
         fi
       )";
 
@@ -237,7 +241,7 @@ Implementation in [`exceptions.bash`][2]
 
     if [[ $__caught_message__ ]]; then
       stack="$__caught_stack__
-$__caught_message__
+$(__style__ red "$__caught_message__")
 
 During handling of the above exception, another exception occurred:
 
@@ -267,7 +271,7 @@ $stack"
   function __catch_or_rethrow__ {
     declare exception_prefix="${1:-}"
     if [[ ! $__thrown_message__ ]]; then
-      __color__ red FatalError: __catch_or_rethrow__ called but nothing thrown >&2
+      __style__ red FatalError: __catch_or_rethrow__ called but nothing thrown >&2
       exit 1
     elif [[ $__thrown_message__ == $exception_prefix* ]]; then
       __caught_message__="$__thrown_message__"
