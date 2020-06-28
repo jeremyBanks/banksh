@@ -8,7 +8,8 @@ declare name filename;
 for filename in *.bash; do
   name="${filename%.bash}"
   chmod --verbose +x "$filename"
-  for extension in md txt; do
-    cp --verbose --symbolic-link --force "$filename" "$name.$extension"
+  for source in "$name.md" "$name.txt"; do
+    cp --verbose --symbolic-link --force "$filename" "$source"
   done
+  (cd ..; cp --verbose --symbolic-link --force "ideas/$filename" "$name")
 done

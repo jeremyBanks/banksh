@@ -16,6 +16,5 @@
       "ideas/*.{md,txt}": true
     },
     "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true,
-    "files.trimTrailingWhitespace": true
+    "files.trimFinalNewlines": true
 }

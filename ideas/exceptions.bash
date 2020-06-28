@@ -1,12 +1,11 @@
 #!/bin/bash
 :<<'```bash' [pardon the mess, this is an imperfect Bash-Markdown polyglot.][1]
 
-Typed Exceptions with Stack Traces in Bash
-==========================================
+Exception-Style Error Handling in Bash
+======================================
 
-by Jeremy Banks, July 2020 ([hire me!])
-
-> # ⚠️ WIP/INCOMPLETE/DRAFT ⚠️
+posted by [Jeremy Banks] in July 2020  
+you may [discuss this on dev.to], reuse it under MIT or CC-BY-NC-2.0, or [hire me]
 
 With the typical `-euo pipefail` error options enabled, unhandled errors in
 Bash scripts are propagated up the call stack until they're handled or exit the
@@ -16,7 +15,7 @@ works, but if you want to handle different types of errors separately, you may
 find yourself writing a lot of boilerplate.
 
 With a relatively modern version of Bash and some creativity, we can do better.
-This is a proof-of-concept using aliases, traps, and functions to provide a
+I present a proof-of-concept using aliases, traps, and functions to provide a
 implementation of exception-style error handling in Bash, with `try-catch`
 blocks, error "types", and stack traces.
 
@@ -401,6 +400,7 @@ To Do (before publishing this post)
 - catch different exception types
 - finally block
 - test what happens with sub-shells.
+- instructions for "if you'd like to just use it, do this, else here's the impl"
 - can we support immediately-thown exceptions? maybe we already do now? test it.
 - update initial examples, consider screenshots.
 - preserve exit status of captured stuff
@@ -427,7 +427,7 @@ or email me at <mailto:_@jeremy.ca> or <mailto:jeb@hey.com>.
 Thanks
 ------
 
-Thanks for Jacob Haven for providing feedback on drafts of this post.
+Thanks to Jacob Haven for providing feedback on drafts of this post.
 
 Appendix 1: Bash manual description of `-e`/`-o errexit` setting
 ----------------------------------------------------------------
@@ -465,6 +465,8 @@ These are described below in the Bash manual's description of the setting.
   [2]: ./exceptions.bash
   [A1]: #appendix-1-bash-manual-description-of--e-o-errexit-setting
   [examples]: #examples-in-exceptionsbash
-  [hire me!]: #are-you-hiring-im-looking
+  [hire me]: #are-you-hiring-im-looking
+  [Jeremy Banks]: mailto:_@jeremy.ca
+  [discuss this on dev.to]: https://dev.to/banks/typed-exceptions-with-stack-traces-in-bash-226n
 
 <!-- -->
