@@ -112,20 +112,20 @@ Implementation in [`exceptions.bash`][2]
 {
   # Returns the specified exit status, implicitly setting $?. Does nothing else.
   #
-  # Used to set the exit status of a block explicitly without returning or
-  # exiting from the enclosing function or subshell.
-  function ?= {
+  # May be used to set the exit status of a block explicitly without returning
+  # or exiting from the enclosing function or subshell.
+  function __status__ {
     return "${1?}"
   }
 
   # Enable __red__ coloring if stdin is a terminal unless NO_COLOR is set.
   if tty > /dev/null && [[ ! ${NO_COLOR+set} ]]; then
     function __red__ {
-      printf "%s%s%s" "$(tput setaf 1 || :)" "$*" "$(tput sgr0 || :)"
+      echo "$(tput setaf 1 || :)$*$(tput sgr0 || :)"
     }
   else
     function __red__ {
-      printf "%s" "$*"
+      echo "$*"
     }
   fi
 }
@@ -133,66 +133,132 @@ Implementation in [`exceptions.bash`][2]
 # Internal exception state and functions
 {
   # We "throw" an exception by setting these global variables.
-  declare __THROWN_MESSAGE__=""
-  declare __THROWN_STACK__=""
+  declare __thrown_message__=""
+  declare __thrown_stack__=""
 
   # We "catch" by unsetting those and moving the values here instead.
-  declare __CAUGHT_MESSAGE__=""
-  declare __CAUGHT_STACK__=""
+  declare __caught_message__=""
+  declare __caught_stack__=""
 
-  function __capture__exception__ {
-    echo ""
+  # Original working directory, required to resolve relative source paths.
+  declare -r __owd__="$(realpath "$(pwd)")"
 
-    # Arbitrary exit status, but ideally one that will stand out.
-    return 69
-  }
-
+  # If an error is unhandled, throw an anonymous exception.
+  trap '__on_err__ $?' ERR
   function __on_err__ {
-    declare -r status="$?"
+    declare -r status="$1"
 
-
+    if [[ ! $__thrown_message__ ]]; then
+      __status__ "$?" || throw
+    fi
   }
 
-  function __on_return__ {
-    declare -r status="$?"
-  }
+  # If a function returns successfully, but an exception is still set, that
+  # means an error was handle without using a catch block. That's not a
+  # problem; we clear it here.
+  trap '{
+    declare __return_status__="$?"
 
+    if [[ $__return_status__ = 0 && ( $__thrown_message__ || $__thrown_stack__ ) ]]; then
+      __thrown_message__=""
+      __thrown_stack__=""
+    fi
+
+    __status__ "$__return_status__"
+  }' RETURN
+
+  # If the script exits with an error, we display the unahndled exception and
+  # stack trace, if known, else a simple error message.
+  trap '__on_exit__ $?' EXIT
   function __on_exit__ {
-    declare -r status="$?"
-  }
+    declare -r status="$1"
 
-  trap __on_err__ ERR
-  trap __on_return__ RETURN
-  trap __on_exit__ EXIT
+    if [[ $status != 0 ]]; then
+      if [[ $__thrown_message__ || $__thrown_stack__ ]]; then
+        __red__ "$__thrown_stack__"$'\n'"$__thrown_message__" >&2
+      else
+        __red__ "Failed with exit status $status." >&2
+      fi
+    fi
+
+    return "$status"
+  }
 }
 
 # Exception syntax
 {
-  alias throw='{ __THROWN_MESSAGE__="$(cat -) [at $(caller 0)]"; return 69; } <<<'
-
   function throw {
     declare -r status="$?"
-    __THROWN_MESSAGE__
+
+    declare message="$*"
+    declare stack="Traceback (most recent call last):"
+
+    if [[ ! $message ]]; then
+      message="UnknownError"
+      if [[ $status != 0 ]]; then
+        message="UnexpectedStatus${status}Error"
+      fi
+    fi
+
+    declare -i i=0
+    while true; do
+      declare caller
+      caller="$(caller $i)" || break
+      [[ $caller =~ ^((.*) (.*) (.*))$ ]]
+      declare line="${BASH_REMATCH[2]}"
+      declare command="${BASH_REMATCH[3]}"
+      declare file="${BASH_REMATCH[4]}"
+      stack+=$'\n'"  File \"$file\", line $line, in $command"
+      stack+="$(
+        cd "$__owd__";
+        declare line_content
+        line_content="$(awk -v n="$line" "NR == n" "$file" || :)";
+        if [[ $line_content ]]; then
+          echo
+          echo "    $line_content"
+        fi
+      )";
+
+      i+=1
+    done
+
+    if [[ $__caught_message__ ]]; then
+      stack="$__caught_stack__
+$__caught_message__
+
+During handling of the above exception, another exception occurred:
+
+$stack"
+    fi
+
+    __thrown_message__="$message"
+    __thrown_stack__="$stack"
+
+    if [[ $status != 0 ]]; then
+      return "$status"
+    else
+      return 69
+    fi
   }
 
   # Our try-catch-yrt syntax wraps a block with a check for that status code
-  # being returned with __THROWN_MESSAGE__ set. If so, the __catch_or_rethrow__ function
-  # is used to compare the __THROWN_MESSAGE__ value to the caught prefix. If there's a
+  # being returned with __thrown_message__ set. If so, the __catch_or_rethrow__ function
+  # is used to compare the __thrown_message__ value to the caught prefix. If there's a
   # match, the catch block is run the error is suppressed. If it doesn't match,
   # the exception is re-thrown. If the try block exits with a non-zero exit
   # status, but no exception it is normalized to an exit status of 1 (TODO:
   # preserve instead?) and propagated.
   alias try='if { '
-  alias catch=' } || [[ $? = 69 && $__THROWN_MESSAGE__ ]]; then { __catch_or_rethrow__ '
+  alias catch=' } || [[ $? = 69 && $__thrown_message__ ]]; then { __catch_or_rethrow__ '
   alias yrt='}; else return 1; fi'
   function __catch_or_rethrow__ {
     declare exception_prefix="${1:-}"
-    if ! [[ $__THROWN_MESSAGE__ ]]; then
-      echo "$(__red__ FatalError: __catch_or_rethrow__ called but nothing thrown)" >&2
+    if [[ ! $__thrown_message__ ]]; then
+      __red__ FatalError: __catch_or_rethrow__ called but nothing thrown >&2
       exit 1
-    elif [[ $__THROWN_MESSAGE__ == $exception_prefix* ]]; then
-      __CAUGHT_MESSAGE__="$__THROWN_MESSAGE__"
-      __THROWN_MESSAGE__=
+    elif [[ $__thrown_message__ == $exception_prefix* ]]; then
+      __caught_message__="$__thrown_message__"
+      __thrown_message__=
       return 0
     else
       # re-throw
@@ -201,16 +267,17 @@ Implementation in [`exceptions.bash`][2]
   }
   # Use the $(caught) function to reference to the exception in a catch block.
   function caught {
-    if [[ $__CAUGHT_MESSAGE__ ]]; then
-      printf "%s" "$__CAUGHT_MESSAGE__"
+    if [[ $__caught_message__ ]]; then
+      echo "$__caught_message__"
     else
-      printf "RuntimeError: caught called outside of catch block"
+      echo "RuntimeError: caught called outside of catch block"
+      return 1
     fi
   }
 }
 
 # If this file has been sourced for use as a library, we're done, return now.
-if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
   return 0
 fi
 
@@ -225,14 +292,14 @@ Examples in [`exceptions.bash`][2]
 ```bash
 function examples {
   try
-    example_1
-    example_2
-    example_3
-    example_4
-  catch ""
-    echo "$(__red__ FatalError: Unhandled exception: "$(caught)")"
-    exit 1
+    example-1
+  catch "ExampleError"
+    throw UhOhError: "I caught a <$(caught)> but I don't know what to do with it!"
   yrt
+}
+
+function example-1 {
+  throw ExampleError: oh noes
 }
 
 function example_1 {
@@ -255,10 +322,10 @@ function format_percent {
   if ! [[ $1 =~ ^[0-9]+$ ]]; then
     throw "TypeError: expected integer for argument 1, got: $1"
   fi
-  if (( $1 < 0 )); then
+  if (( "$1" < 0 )); then
     throw "RangeError: argument 1 was too small, expected >= 0, got: $1"
   fi
-  if (( $1 > 100 )); then
+  if (( "$1" > 100 )); then
     throw "RangeError: argument 1 was too large, expected <= 100, got: $1"
   fi
 
