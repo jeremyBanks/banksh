@@ -6,6 +6,8 @@ Typed Exceptions with Stack Traces in Bash
 
 by Jeremy Banks, July 2020 ([hire me!])
 
+> # ⚠️ WIP/INCOMPLETE/DRAFT ⚠️
+
 With the typical `-euo pipefail` error options enabled, unhandled errors in
 Bash scripts are propagated up the call stack until they're handled or exit the
 script (see [details below][A1] if you're unfamiliar). However, the only
@@ -19,24 +21,24 @@ implementation of exception-style error handling in Bash, with `try-catch`
 blocks, error "types", and stack traces.
 
 ```sh
-function example-1 {
-  try
-    declare contents=fread "$1"
-  catch "IOError"
-    echo "Are you sure entered that path correctly? $(caught)"
-    exit 1
-  yrt
-
-  echo "The file named '$1' contained ${#contents} characters."
-}
+source ./exceptions.bash
 
 function fread {
   if [[ ! -f $1 ]]; then
-    throw "IOError: the file '$1' does not exist"
+    throw IOError: "the file '$1' does not exist"
   else
     cat "$1"
   fi
 }
+
+try # XXX: is this broken because of subshells? man you need to test this.
+  declare contents="$(fread "$1")"
+catch IOError
+  echo "Are you sure entered that path correctly? $(caught)"
+  exit 1
+yrt
+
+echo "The file named '$1' contained ${#contents} characters."
 ```
 
 ```
@@ -52,9 +54,7 @@ Are you sure you entered that path correctly? IOError: the file 'does-not.txt' d
 Unhandled errors will exit with a stack trace, whether they're `thrown` or not.
 
 ```sh
-function example-2 {
-  event-loop
-}
+source ./exceptions.bash
 
 function event-loop {
   while true; do
@@ -66,12 +66,12 @@ function event-loop {
 function tick {
   cat /bad/path
 }
+
+event-loop
 ```
 
 ```
 $ bash example-2
-FatalError: Unhandled exception.
-
 Traceback (most recent call last):
   File "example-2", line 42, in main
   File "example-2", line 2, in example-2
@@ -109,7 +109,7 @@ Implementation in [`exceptions.bash`][2]
   shopt -s expand_aliases
 }
 
-# Utility functions
+# Private utility functions
 {
   # Returns the specified exit status, implicitly setting $?. Does nothing else.
   #
@@ -119,8 +119,10 @@ Implementation in [`exceptions.bash`][2]
     return "${1?}"
   }
 
-  # Enable __style__ if stdio is all-terminal and NO_COLOR is not set.
+  # We only enable styles if stdio is all-terminal and NO_COLOR is not set.
   if [[ -t 0 && -t 1 && -t 2 ]] && [[ ! ${NO_COLOR+set} ]]; then
+    # Applies a dash-delimited list of text styles, specified by the first
+    # argument, to the remaining arguments, printing the formatted text.
     function __style__ {
       printf "%s" "$__style_reset__"
       declare names
@@ -128,7 +130,7 @@ Implementation in [`exceptions.bash`][2]
       for name in $names; do
         declare -n color="__style_${name}__"
         if [[ ! ${color+set} ]]; then
-          throw ValueError: "invalid color name: $name"
+          throw ValueError: "invalid style name: $name"
         fi
         printf "%s" "$color"
       done
@@ -136,19 +138,21 @@ Implementation in [`exceptions.bash`][2]
       printf "%s\n" "$__style_reset__"
     }
 
-    declare -r __style_red__="$(tput setaf 1 || :)"
+    # Text styles we use, or empty strings if tput doesn't recognize $SHELL.
+    declare -r __style_red__="$(tput setaf 9 || :)"
     declare -r __style_yellow__="$(tput setaf 3 || :)"
     declare -r __style_bold__="$(tput bold || :)"
     declare -r __style_underline__="$(tput smul || :)"
     declare -r __style_reset__="$(tput sgr0 || :)"
   else
+    # If styles aren't enabled, skip the first argument, print the rest as-is.
     function __style__ {
       echo "${*:2}"
     }
   fi
 }
 
-# Internal exception state and functions
+# Private exception state and functions
 {
   # We "throw" an exception by setting these global variables.
   declare __thrown_message__=""
@@ -202,7 +206,7 @@ Implementation in [`exceptions.bash`][2]
   }
 }
 
-# Exception syntax
+# Public exception syntax
 {
   function throw {
     declare -r status="$?"
@@ -219,12 +223,17 @@ Implementation in [`exceptions.bash`][2]
     fi
 
     declare -i i
-    for ((i = 0; i < ${#FUNCNAME[@]}; i += 1)); do
-      declare -i j=$(($i + 1))
-      declare line="${BASH_LINENO[$i]}"
+    for ((i = ${#FUNCNAME[@]} - 1; i >= 1; i -= 1)); do
+      declare line="${BASH_LINENO[$((i - 1))]}"
       declare command="${FUNCNAME[$i]}"
       declare file="${BASH_SOURCE[$i]}"
-      stack+=$'\n'"  File \"$file\", line $line, in $(__style__ yellow "$command")"
+
+      stack+=$'\n'"  File \"$file\", line $line"
+      if (( i + 1 < ${#FUNCNAME[@]} )) || [[ $command != main ]]; then
+        # Bash identifies the top-level as though it were a function named
+        # "main". We want to remove that potential confusion.
+        stack+=", in $(__style__ yellow "$command")"
+      fi
       stack+="$(
         cd "$__owd__";
         declare line_content="$(
@@ -309,7 +318,6 @@ Examples in [`exceptions.bash`][2]
 ```bash
 source ./exceptions.bash
 
-
 function examples {
   try
     example-1
@@ -346,13 +354,39 @@ for each type.
 
 Syntax error messages are gibberish.
 
-To Do
------
+Potential Future Work
+---------------------
+
+### Extensible exception metadata
+
+Instead of just storing exception data as a string, we could store it as a Bash
+assocative array (string map/dictionary), and allow arbitrary key-value pairs to
+be attached. This could be provided as a `throw(( ... ))` variant of the
+`throw [...]` statement.
+
+```bash
+throw((
+  [message]=TypeError: "expected integer, but got a string (\"\")"
+  [exit-status]=3
+  [example-foo-api-error-code]=FOO-1234
+))
+```
+
+### Implement this as a patch for Bash itself
+
+I've never looked at Bash's source code, but this feature isn't too complicated,
+so it should be a feasible and educational exercise to implement as part of Bash
+itself.
+
+To Do (before publishing this post)
+-----------------------------------
 
 - catch different exception types
 - finally block
 - test what happens with sub-shells.
-- can we support immediately-thown exceptions? maybe we already do now?
+- can we support immediately-thown exceptions? maybe we already do now? test it.
+- update initial examples, consider screenshots.
+- preserve exit status of captured stuff
 
 Are you hiring? I'm looking!
 ----------------------------
@@ -370,6 +404,11 @@ I'm located in Toronto, Canada but would prefer a remote position.
 
 Check out my profile on LinkedIn at <https://linkedin.com/in/jeremy-banks/>
 or email me at <mailto:_@jeremy.ca> or <mailto:jeb@hey.com>.
+
+Thanks
+------
+
+Thanks for Jacob Haven for providing feedback on drafts of this post.
 
 Appendix 1: Bash manual description of `-e`/`-o errexit` setting
 ----------------------------------------------------------------
