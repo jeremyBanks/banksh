@@ -349,15 +349,15 @@ Potential Future Work
 
 Instead of just storing exception data as a string, we could store it as a Bash
 assocative array (string map/dictionary), and allow arbitrary key-value pairs to
-be attached. This could be provided as a `throw(( ... ))` variant of the
-`throw [...]` statement.
+be attached. This could be provided as a `throw( ... )` variant of the
+`throw ...` statement.
 
 ```bash
-throw((
+throw(
   [message]=TypeError: "expected integer, but got a string (\"\")"
   [exit-status]=3
   [example-foo-api-error-code]=FOO-1234
-))
+)
 ```
 
 We would extend the `caught` function to accept an optional second argument,
