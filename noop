@@ -1,3 +1,0 @@
-#!/bin/bash
-# shellcheck source=./libs/base.bash
-source /dev/null; eval "$(cat "$(dirname -- "$0")/libs/base.bash")"

@@ -13,7 +13,9 @@
       "{_,.}*": true,
       "CNAME": true,
       "icon.png": true,
-      "ideas/*.{md,txt}": true
+      "ideas/*.{md,txt}": true,
+      ".vscode": true,
+      ".github": true
     },
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true
