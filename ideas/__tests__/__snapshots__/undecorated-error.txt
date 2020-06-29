@@ -1,3 +1,5 @@
+stderr
+------
 undecorated-error.spec.bash: line 16: ten-four: command not found
 Traceback (most recent call last):
   File "undecorated-error.spec.bash", line 19
@@ -11,3 +13,11 @@ Traceback (most recent call last):
   File "undecorated-error.spec.bash", line 16, in delta
     ten-four @roger
 UnknownStatus127Error: Command 'ten-four @roger' failed with status 127.
+
+stdout
+------
+
+
+status
+------
+127

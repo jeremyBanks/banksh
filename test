@@ -7,6 +7,7 @@ source /dev/null; eval "$(cat "$(dirname -- "$0")/libs/base.bash")"
 declare owd="$PWD"
 declare name
 declare status
+declare stderr
 declare -i passes=0
 declare -i failures=0
 for suite in "$PWD"/**/__tests__; do
@@ -15,16 +16,13 @@ for suite in "$PWD"/**/__tests__; do
   mkdir -p "__snapshots__"
   for test in *.spec.bash; do
     echo "$test"
-    name="$(basename "${test%.spec.bash}")"
-    rm -rf "__snapshots__/$name.status.txt"
-    rm -rf "__snapshots__/$name.stdout.txt"
-    rm -rf "__snapshots__/$name.stderr.txt"
-    if [[ ! -e "__snapshots__/$name.stdin.txt" ]]; then
-      touch "__snapshots__/$name.stdin.txt"
-    fi
+    name="__snapshots__/${test%.spec.bash}.txt"
+    rm -rf "$name"
+    touch "$name"
     status=0
-    bash "$test" <"__snapshots__/$name.stdin.txt" 1>"__snapshots__/$name.stdout.txt" 2>"__snapshots__/$name.stderr.txt" || status="$?"
-    echo "$status" > "__snapshots__/$name.status.txt"
+    printf "stderr\n------\n" >> "$name"
+    stdout="$(bash "$test" 2>>"$name" | printf "%s\n" "$(cat -)")" || status="$?"
+    printf "\nstdout\n------\n%s\n\nstatus\n------\n%s\n" "$stdout" "$status" >> "$name"
     git add --intent-to-add "$suite"
     if git --no-pager diff --exit-code --shortstat HEAD -- "__snapshots__/$name.*"; then
       passes+=1

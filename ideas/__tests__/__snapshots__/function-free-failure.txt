@@ -1,0 +1,12 @@
+stderr
+------
+hello underworld
+Failed with exit status 42.
+
+stdout
+------
+hello world
+
+status
+------
+42

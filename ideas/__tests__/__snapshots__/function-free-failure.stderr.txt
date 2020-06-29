@@ -1,2 +1,0 @@
-hello underworld
-Failed with exit status 42.

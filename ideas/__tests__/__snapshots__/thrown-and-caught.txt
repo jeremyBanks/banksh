@@ -1,0 +1,11 @@
+stderr
+------
+
+stdout
+------
+Oops, we gave the wrong type to gamma! (TypeError: got a cat when we expected a dog)
+Let's pretend that didn't happen.
+
+status
+------
+0
