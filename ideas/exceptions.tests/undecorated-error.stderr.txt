@@ -10,5 +10,4 @@ Traceback (most recent call last):
     delta
   File "./undecorated-error.bash", line 16, in delta
     ten-four
-  File "./undecorated-error.bash", line 174, in __on_err__
 UnknownStatus127Error: Command 'ten-four' failed with status 127.

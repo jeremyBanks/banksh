@@ -4,9 +4,9 @@
 Exception-Style Error Handling in Bash
 ======================================
 
-posted by [Jeremy Banks] in July 2020  
+posted by [Jeremy Banks], July 2020  
 you may [discuss this on dev.to],
-reuse it under MIT or CC-BY-NC-2.0,
+[download the code/doc] (MIT/CC-BY-NC-2.0),
 or [hire me]
 
 With the typical `-euo pipefail` error options enabled, unhandled errors in
@@ -239,6 +239,10 @@ Implementation in [`exceptions.bash`][2]
       declare command="${FUNCNAME[$i]}"
       declare file="${BASH_SOURCE[$i]}"
 
+      if [[ $i == 1 && $command == __on_err__ ]]; then
+        continue
+      fi
+
       stack+=$'\n'"  File \"$file\", line $line"
       if (( i + 1 < ${#FUNCNAME[@]} )) || [[ $command != main ]]; then
         # Bash identifies the top-level as though it were a function named
@@ -435,6 +439,7 @@ These are described below in the Bash manual's description of the setting.
 
   [1]: ./exceptions.txt
   [2]: ./exceptions.bash
+  [download the code/doc]: ./exceptions.bash
   [A1]: #appendix-1-bash-manual-description-of--e-o-errexit-setting
   [examples]: #examples-in-exceptionsbash
   [hire me]: #are-you-hiring-im-looking
