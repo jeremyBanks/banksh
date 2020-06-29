@@ -170,7 +170,7 @@ Implementation in [`exceptions.bash`][2]
     declare -r status="$1"
     declare -r command="$2"
 
-    if (( __thrown_status__ = 0 )); then
+    if [[ $__thrown_status__ = 0 ]]; then
       __status__ "$status" || throw CommandError: "Command '$command' failed with status $status"
     fi
 
@@ -181,8 +181,7 @@ Implementation in [`exceptions.bash`][2]
   # means an error was handle without using a catch block. That's not a
   # problem; we clear it here.
   trap '{
-    __returned_status__="$?"
-    if (( __returned_status__ = 0 )); then
+    if [[ $? = 0 && $__thrown_status__ != 0 && $FUNCNAME != throw ]]; then
       __thrown_status__=0
       __thrown_message__=""
       __thrown_stack__=""
@@ -214,6 +213,7 @@ Implementation in [`exceptions.bash`][2]
   #   throw SomeTypeOfError: "a string message"
   function throw {
     declare -i status="$?"
+    __thrown_status__=0
 
     declare message="$*"
     declare stack
@@ -259,7 +259,7 @@ During handling of the above exception, another exception occurred:
 $stack"
     fi
 
-    if [[ $status == 0 ]]; then
+    if [[ $status = 0 ]]; then
       status=69
     fi
 
@@ -310,37 +310,6 @@ $stack"
     fi
   }
 }
-
-# If this file has been sourced for use as a library, we're done, return now.
-if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
-  return 0
-fi
-
-# Otherwise, it has been run directly, so we'll continue and run the examples.
-
-
-:<<'```bash' pardon the mess
-```
-
-Examples in [`exceptions.bash`][2]
-----------------------------------
-
-```bash
-function examples {
-  try
-    example-1
-  catch ""
-    throw UhOhError: "caught an exception ($(caught)), what do I do? oh no!"
-  yrt
-}
-
-function example-1 {
-  throw ExampleError: oh noes
-}
-
-# Run the examples.
-examples
-
 
 :<<'<!-- -->' pardon the mess
 ```

@@ -3,7 +3,7 @@
     "editor.detectIndentation": false,
     "editor.wrappingIndent": "indent",
     "editor.wordWrapColumn": 80,
-    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrap": "on",
     "editor.renderWhitespace": "boundary",
     "editor.fontFamily": "\"JetBrains Mono\", Consolas, monospace",
     "shellcheck.customArgs": [
