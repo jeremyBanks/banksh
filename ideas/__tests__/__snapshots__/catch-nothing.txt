@@ -1,0 +1,11 @@
+stderr
+------
+
+stdout
+------
+hello world
+goodbye world
+
+status
+------
+0

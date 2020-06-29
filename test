@@ -24,7 +24,7 @@ for suite in "$PWD"/**/__tests__; do
     stdout="$(bash "$test" 2>>"$name" | printf "%s\n" "$(cat -)")" || status="$?"
     printf "\nstdout\n------\n%s\n\nstatus\n------\n%s\n" "$stdout" "$status" >> "$name"
     git add --intent-to-add "$suite"
-    if git --no-pager diff --exit-code --shortstat HEAD -- "__snapshots__/$name.*"; then
+    if git --no-pager diff --exit-code --shortstat -- "__snapshots__/$name.*"; then
       passes+=1
     else
       failures+=1
@@ -34,7 +34,7 @@ for suite in "$PWD"/**/__tests__; do
 done
 cd "$owd"
 declare -i total=$((passes + failures))
-if git diff --quiet HEAD -- "$PWD"/**/__tests__/__snapshots__; then
+if git diff --quiet -- "$PWD"/**/__tests__/__snapshots__; then
   echo "$(tput setaf 2 || :)All $passes tests passed.$(tput sgr0 || :)"
   exit 0
 else

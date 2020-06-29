@@ -1,0 +1,11 @@
+stderr
+------
+Failed with exit status 1.
+
+stdout
+------
+
+
+status
+------
+1

@@ -1,7 +1,7 @@
 #!/bin/bash
 :<<'```bash' [pardon the mess, this is an imperfect Bash-Markdown polyglot.][1]
 
-Exception-Style Error Handling in Bash
+[DRAFT] Exception-Style Error Handling in Bash
 ======================================
 
 posted by [Jeremy Banks], July 2020  
@@ -86,8 +86,57 @@ handled like a normal error or by a matching `try-catch-ryt` block. We use
 Bash traps to reset the exception state if an error is handled outside of a
 `catch` block, and to display the stack trace if one isn't handled at all.
 
+We support all the good stuff: try-finally-ytr, try-catch-catch-catch-ytr,
+try-catch-finally-ytr.
+
 Usage
 -----
+
+### Activating
+
+Download [exceptions.bash] into your project and import it at the top of your
+Bash script like this:
+
+```bash
+eval "$(cat "$(dirname "${BASH_SOURCE[0]}")/exceptions.bash")"
+```
+
+In addition to defining the exception-style operations (described below), this
+needs to define `ERR` and `RETURN` traps to integrated with Bash's regular error
+handling, define an `EXIT` trap to display stack traces for uncaught exceptions,
+set the Bash flag to enable aliases in scripts, and set the Bash flags to enable
+trap inheritance to functions and subshells. That's is why we unfortunately need
+to use `eval`: it's not possible for a `source`-imported script to define traps
+in the importing/top-level script.
+
+### Throwing
+
+We add `try-catch-finally` blocks for handling errors, similar to what you might
+find in languages like Java. Like in those languages, the try block is required,
+containing the code that may produce an error. It may be followed by any number
+of catch blocks, each specifying a type of exception they would like to handle.
+
+
+a catch block may occur zero or more times, and a finally block may occur zero
+or one times. 
+
+
+
+```bash
+throw ValueError: "expected x to be between 0 and 100, but it was: $x"
+```
+
+If you don't use `throw`, any unhandled errors will automatically be converted
+into a generic exception like:
+
+```
+CommandStatus1Error: command 'false' failed with status 1.
+```
+
+### Catching
+
+
+
 
 API documentation style stuff here.
 
@@ -105,6 +154,9 @@ Implementation in [`exceptions.bash`][2]
 
   # Ensure a known-compatible version of Bash.
   (( "${BASH_VERSINFO[0]}" >= 4 )) && readonly BASH_COMPAT=4.2
+
+  # Sanity check: not sourced or in a subshell.
+  [[ $BASH_SUBSHELL == 0 && ${BASH_SOURCE[0]} == $0 ]]
 
   # Propagate RETURN, ERR, and DEBUG traps to functions and subshells.
   set -o errtrace -o functrace
@@ -381,6 +433,7 @@ To Do (before publishing this post)
 - update initial examples, consider screenshots.
 - preserve exit status of captured stuff
 - test behaviour with -c command line or stdin scripts -- do we break?
+- throw without arguments to re-raise, like in Python
 
 Are you hiring? I'm looking!
 ----------------------------
@@ -403,7 +456,7 @@ or email me at <mailto:_@jeremy.ca> or <mailto:jeb@hey.com>.
 Acknowledgments
 ---------------
 
-Thanks to [Jacob Haven] for providing feedback on drafts of this post.
+Thanks to [Jacob Haven] for providing feedback on earlier versions of this work.
 
 Appendix 1: Bash manual description of `-e`/`-o errexit` setting
 ----------------------------------------------------------------
@@ -439,6 +492,7 @@ These are described below in the Bash manual's description of the setting.
 
   [1]: ./exceptions.txt
   [2]: ./exceptions.bash
+  [exceptions.bash]: ./exceptions.bash
   [download the code/doc]: ./exceptions.bash
   [A1]: #appendix-1-bash-manual-description-of--e-o-errexit-setting
   [examples]: #examples-in-exceptionsbash
