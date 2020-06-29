@@ -1,6 +1,6 @@
 #!/bin/bash
-eval "$(cat "$(dirname -- "$0")/lib/base.bash")"
-# shellcheck source=lib/base.bash
+eval "$(cat "$(dirname -- "$0")/lib/base")"
+# shellcheck source=lib/base
 source /dev/null
 
 # Simple snapshot testing for Bash scripts, using Git.
