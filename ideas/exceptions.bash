@@ -5,7 +5,9 @@ Exception-Style Error Handling in Bash
 ======================================
 
 posted by [Jeremy Banks] in July 2020  
-you may [discuss this on dev.to], reuse it under MIT or CC-BY-NC-2.0, or [hire me]
+you may [discuss this on dev.to],
+reuse it under MIT or CC-BY-NC-2.0,
+or [hire me]
 
 With the typical `-euo pipefail` error options enabled, unhandled errors in
 Bash scripts are propagated up the call stack until they're handled or exit the
@@ -20,7 +22,7 @@ implementation of exception-style error handling in Bash, with `try-catch`
 blocks, error "types", and stack traces.
 
 ```sh
-source ./exceptions.bash
+source exceptions.bash
 
 function fread {
   if [[ ! -f $1 ]]; then
@@ -53,7 +55,7 @@ Are you sure you entered that path correctly? IOError: the file 'does-not.txt' d
 Unhandled errors will exit with a stack trace, whether they're `thrown` or not.
 
 ```sh
-source ./exceptions.bash
+source exceptions.bash
 
 function event-loop {
   while true; do
@@ -321,14 +323,14 @@ fi
 # Otherwise, it has been run directly, so we'll continue and run the examples.
 
 
-:<<'source ./exceptions.bash' pardon the mess
+:<<'source exceptions.bash' pardon the mess
 ```
 
 Examples in [`exceptions.bash`][2]
 ----------------------------------
 
 ```bash
-source ./exceptions.bash
+source exceptions.bash
 
 function examples {
   try
@@ -424,10 +426,10 @@ position.
 Check out my profile on LinkedIn at <https://linkedin.com/in/jeremy-banks/>
 or email me at <mailto:_@jeremy.ca> or <mailto:jeb@hey.com>.
 
-Thanks
-------
+Acknowledgments
+---------------
 
-Thanks to Jacob Haven for providing feedback on drafts of this post.
+Thanks to [Jacob Haven] for providing feedback on drafts of this post.
 
 Appendix 1: Bash manual description of `-e`/`-o errexit` setting
 ----------------------------------------------------------------
@@ -466,7 +468,8 @@ These are described below in the Bash manual's description of the setting.
   [A1]: #appendix-1-bash-manual-description-of--e-o-errexit-setting
   [examples]: #examples-in-exceptionsbash
   [hire me]: #are-you-hiring-im-looking
-  [Jeremy Banks]: mailto:_@jeremy.ca
   [discuss this on dev.to]: https://dev.to/banks/typed-exceptions-with-stack-traces-in-bash-226n
+  [Jeremy Banks]: mailto:_@jeremy.ca
+  [Jacob Haven]: https://github.com/jacobhaven
 
 <!-- -->
