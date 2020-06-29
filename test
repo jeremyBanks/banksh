@@ -5,41 +5,65 @@ source /dev/null
 
 # Simple snapshot testing for Bash scripts, using Git.
 
-declare owd="$PWD"
-declare name
+declare update_snapshot=
+for arg in "$@"; do
+  if [[ $arg == -u || $arg == --update-snapshot ]]; then
+    update_snapshot=true
+  fi
+done
+
+cd "$__owd__"
+
 declare status
 declare stdout
+declare actual
+declare expected
 declare -i passes=0
 declare -i failures=0
 for suite in "$PWD"/**/__tests__; do
-  echo "$suite/"
   cd "$suite"
-  mkdir -p "__snapshots__"
+  rm -rf __snapshots_actual__
+  mkdir -p __snapshots_actual__ __snapshots__
+
   for test in *.spec.bash; do
-    echo "$test"
-    name="__snapshots__/${test%.spec.bash}.txt"
-    rm -rf "$name"
-    touch "$name"
+    echo "$(tput smul || :)$suite/$test$(tput rmul || :)"
+    actual="__snapshots_actual__/${test%.spec.bash}.txt"
+    expected="__snapshots__/${test%.spec.bash}.txt"
+    
+    if [[ ! -f "$expected" ]]; then
+      printf "stderr:\nstdout:\nstatus: 0\n" > "$expected"
+    fi
+    touch "$actual"
+    
     status=0
-    printf "stderr\n------\n" >> "$name"
-    stdout="$(bash "$test" 2>>"$name" | printf "%s\n" "$(cat -)")" || status="$?"
-    printf "\nstdout\n------\n%s\n\nstatus\n------\n%s\n" "$stdout" "$status" >> "$name"
-    git add --intent-to-add "$suite"
-    if git --no-pager diff --exit-code --shortstat -- "__snapshots__/$name.*"; then
+    printf "stderr:\n" >> "$actual"
+    stdout="$(bash "$test" 2>>"$actual" | printf "%s\n" "$(cat -)")" || status="$?"
+    printf "stdout:\n%sstatus: %s\n" "$stdout" "$status" >> "$actual"
+
+    if diff --old-group-format="$(tput setaf 12 || :)%<$(tput sgr0 || :)" --new-group-format="$(tput setaf 9 || :)%>$(tput sgr0 || :)" --unchanged-group-format="$(tput setaf 8 || :)%=$(tput sgr0 || :)" --color=auto "$expected" "$actual"; then
       passes+=1
     else
       failures+=1
+      if [[ $update_snapshot ]]; then
+        cp "$actual" "$expected";
+      fi
     fi
+    echo
   done
-  echo
 done
-cd "$owd"
+
 declare -i total=$((passes + failures))
-if git diff --quiet -- "$PWD"/**/__tests__/__snapshots__; then
-  echo "$(tput setaf 2 || :)All $passes tests passed.$(tput sgr0 || :)"
+if [[ $failures = 0 ]]; then
+  echo "$(tput setaf 2 || :)SUCCESS:$(tput sgr0) All $passes tests passed."
   exit 0
 else
-  echo "$(tput setaf 9 || :)$(tput smul || :)$failures of $total tests failed$(tput rmul || :) (snapshots did not match committed data)$(tput sgr0 || :)"
-  git diff --exit-code --compact-summary HEAD -- "$PWD"/**/__tests__/__snapshots__
-  exit 1
+  if [[ $update_snapshot ]]; then
+    echo "$(tput setaf 3 || :)SUCCESS:$(tput sgr0) $failures of $total test snapshots updated."
+    exit 0
+  else
+    echo "$(tput setaf 9 || :)FAILURE:$(tput sgr0) $failures of $total tests failed to match snapshots (colors: $(tput setaf 8 || :)unchanged $(tput setaf 12 || :)expected $(tput setaf 9)actual$(tput sgr0))."
+    echo
+    echo "Run ./test --update-snapshot to update snapshots."
+    exit 1
+  fi
 fi

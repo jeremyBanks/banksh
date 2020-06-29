@@ -97,7 +97,7 @@ Usage
 Download [exceptions.bash] into your project and import it at the top of your
 Bash script like this:
 
-```bash
+```BASH
 eval "$(cat "$(dirname "${BASH_SOURCE[0]}")/exceptions.bash")"
 ```
 
@@ -120,9 +120,7 @@ of catch blocks, each specifying a type of exception they would like to handle.
 a catch block may occur zero or more times, and a finally block may occur zero
 or one times. 
 
-
-
-```bash
+```BASH
 throw ValueError: "expected x to be between 0 and 100, but it was: $x"
 ```
 
