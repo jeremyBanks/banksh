@@ -1,0 +1,62 @@
+stderr
+------
+cat: ./exceptions.bash: No such file or directory
+thrown-and-caught.spec.bash: command substitution: line 128: syntax error near unexpected token `('
+thrown-and-caught.spec.bash: command substitution: line 128: `In addition to defining the exception-style operations (described below), this'
+thrown-and-caught.spec.bash: line 126: and: command not found
+thrown-and-caught.spec.bash: command substitution: line 126: unexpected EOF while looking for matching `''
+thrown-and-caught.spec.bash: command substitution: line 128: syntax error: unexpected end of file
+thrown-and-caught.spec.bash: line 126: trap: display: invalid signal specification
+thrown-and-caught.spec.bash: line 126: trap: stack: invalid signal specification
+thrown-and-caught.spec.bash: line 126: trap: traces: invalid signal specification
+thrown-and-caught.spec.bash: line 126: trap: for: invalid signal specification
+thrown-and-caught.spec.bash: line 126: trap: uncaught: invalid signal specification
+thrown-and-caught.spec.bash: line 126: trap: exceptions,: invalid signal specification
+thrown-and-caught.spec.bash: command substitution: line 128: unexpected EOF while looking for matching `''
+thrown-and-caught.spec.bash: command substitution: line 130: syntax error: unexpected end of file
+thrown-and-caught.spec.bash: command substitution: line 126: unexpected EOF while looking for matching `''
+thrown-and-caught.spec.bash: command substitution: line 127: syntax error: unexpected end of file
+thrown-and-caught.spec.bash: line 126: -imported: command not found
+thrown-and-caught.spec.bash: command substitution: line 127: syntax error near unexpected token `in'
+thrown-and-caught.spec.bash: command substitution: line 127: `in the importing/top-level script.'
+thrown-and-caught.spec.bash: line 126: blocks: command not found
+find: ‘in’: No such file or directory
+find: ‘languages’: No such file or directory
+find: ‘like’: No such file or directory
+find: ‘Java.’: No such file or directory
+find: ‘Like’: No such file or directory
+find: ‘in’: No such file or directory
+find: ‘those’: No such file or directory
+find: ‘languages,’: No such file or directory
+find: ‘the’: No such file or directory
+find: ‘try’: No such file or directory
+find: ‘block’: No such file or directory
+find: ‘is’: No such file or directory
+find: ‘required,’: No such file or directory
+thrown-and-caught.spec.bash: line 128: containing: command not found
+thrown-and-caught.spec.bash: line 129: of: command not found
+thrown-and-caught.spec.bash: line 132: a: command not found
+thrown-and-caught.spec.bash: line 133: or: command not found
+thrown-and-caught.spec.bash: line 126: ERRRETURNEXITevalsourcetry-catch-finallybash: command not found
+thrown-and-caught.spec.bash: line 127: throw: command not found
+thrown-and-caught.spec.bash: command substitution: line 135: unexpected EOF while looking for matching `''
+thrown-and-caught.spec.bash: command substitution: line 136: syntax error: unexpected end of file
+thrown-and-caught.spec.bash: line 133: ,: command not found
+thrown-and-caught.spec.bash: line 134: into: command not found
+thrown-and-caught.spec.bash: line 133: throw: command not found
+thrown-and-caught.spec.bash: line 134: CommandStatus1Error:: command not found
+thrown-and-caught.spec.bash: line 156: API: command not found
+thrown-and-caught.spec.bash: command substitution: line 158: unexpected EOF while looking for matching `''
+thrown-and-caught.spec.bash: command substitution: line 161: syntax error: unexpected end of file
+thrown-and-caught.spec.bash: line 149: ][2]: command not found
+thrown-and-caught.spec.bash: line 150: ----------------------------------------: command not found
+thrown-and-caught.spec.bash: line 149: exceptions.bashbash: command not found
+
+stdout
+------
+Oops, we gave the wrong type to gamma! (TypeError: got a cat when we expected a dog)
+Let's pretend that didn't happen.
+
+status
+------
+0

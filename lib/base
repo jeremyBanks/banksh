@@ -1,14 +1,13 @@
-: base.bash
-# shellcheck shell=bash
+#!/bin/bash
 
 { # Check preconditions and set Bash settings.
   if (( "${BASH_VERSINFO[0]:-0}" <= 3 )); then
    echo "FATAL: bash>=4.2 required, but using: $("$(command -v "$(ps -cp "$$" -o command=)")" --version)"
    exit 1
-  elif [[ "$(basename "${BASH_SOURCE[0]}")" == "base.bash" ]]; then
-   echo 'FATAL: base.bash should be evaled:'
+  elif [[ "$(basename "${BASH_SOURCE[0]}")" == "base" ]]; then
+   echo 'FATAL: base should be evaled:'
    # shellcheck disable=SC2016
-   echo '  eval "$(cat "$(dirname "$0")/base.bash")"'
+   echo '  eval "$(cat "$(dirname "$0")/base")"'
    exit 1
   elif [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
    echo "FATAL: ${BASH_SOURCE[0]} is a script, not a library. Execute it, don't source it."

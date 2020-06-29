@@ -1,13 +1,14 @@
 #!/bin/bash
-# shellcheck source=./libs/base.bash
-source /dev/null; eval "$(cat "$(dirname -- "$0")/libs/base.bash")"
+eval "$(cat "$(dirname -- "$0")/lib/base.bash")"
+# shellcheck source=lib/base.bash
+source /dev/null
 
 # Simple snapshot testing for Bash scripts, using Git.
 
 declare owd="$PWD"
 declare name
 declare status
-declare stderr
+declare stdout
 declare -i passes=0
 declare -i failures=0
 for suite in "$PWD"/**/__tests__; do

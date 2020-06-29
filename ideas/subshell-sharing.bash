@@ -4,7 +4,8 @@ set -x
 
 (( "${BASH_VERSINFO[0]}" >= 4 )) && readonly BASH_COMPAT=4.2
 
-declare fifo_tmp_path="$(mktemp -u)"
+declare fifo_tmp_path
+fifo_tmp_path="$(mktemp -u)"
 mkfifo "$fifo_tmp_path"
 exec {fifo}<>"$fifo_tmp_path"
 rm "$fifo_tmp_path"

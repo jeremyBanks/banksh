@@ -1,12 +1,13 @@
 #!/bin/bash
 :<<'```bash' [pardon the mess, this is an imperfect Bash-Markdown polyglot.][1]
 
-[DRAFT] Exception-Style Error Handling in Bash
+[WIP]
+Exception-Style Error Handling in Bash
 ======================================
 
 posted by [Jeremy Banks], July 2020  
 you may [discuss this on dev.to],
-[download the code/doc] (MIT/CC-BY-NC-2.0),
+[download the code/doc] (MIT/CC-BY-SA-4.0),
 or [hire me]
 
 With the typical `-euo pipefail` error options enabled, unhandled errors in
@@ -434,6 +435,16 @@ To Do (before publishing this post)
 - preserve exit status of captured stuff
 - test behaviour with -c command line or stdin scripts -- do we break?
 - throw without arguments to re-raise, like in Python
+- utility function for mapping status codes, potentially even:
+
+  ```
+  my-command || throw(
+    [2]=IOError: "path $file did not exist"
+    [3]=TypeError: "value $count was not an integer"
+  )
+  ```
+
+  as a distinct meaning for numerc keys.
 
 Are you hiring? I'm looking!
 ----------------------------
