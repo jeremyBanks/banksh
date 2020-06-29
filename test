@@ -1,26 +1,29 @@
 #!/bin/bash
-# shellcheck source=base.bash
-source /dev/null; eval "$(cat "$(dirname -- "$0")/base.bash")"
+# shellcheck source=./libs/base.bash
+source /dev/null; eval "$(cat "$(dirname -- "$0")/libs/base.bash")"
 
+declare owd="$PWD"
 declare name status
-
-for suite in "$PWD"/**/*.tests; do
+for suite in "$PWD"/**/__tests__; do
   echo "$suite" >&2
   cd "$suite"
-  for test in ./*.bash; do
+  mkdir -p "__snapshots__"
+  for test in ./*.spec.bash; do
     echo "$test" >&2
-    name="${test%.*}"
-    rm -rf "$name.status.txt"
-    rm -rf "$name.stdout.txt"
-    rm -rf "$name.stderr.txt"
-    if [[ ! -e "$name.stdin.txt" ]]; then
-      touch "$name.stdin.txt"
+    name="$(basename "${test%.spec.bash}")"
+    rm -rf "__snapshots__/$name.status.txt"
+    rm -rf "__snapshots__/$name.stdout.txt"
+    rm -rf "__snapshots__/$name.stderr.txt"
+    if [[ ! -e "__snapshots__/$name.stdin.txt" ]]; then
+      touch "__snapshots__/$name.stdin.txt"
     fi
     status=0
-    bash "$test" <"$name.stdin.txt" 1>"$name.stdout.txt" 2>"$name.stderr.txt" || status="$?"
-    echo "$status" > "$name.status.txt"
+    bash "$test" <"__snapshots__/$name.stdin.txt" 1>"__snapshots__/$name.stdout.txt" 2>"__snapshots__/$name.stderr.txt" || status="$?"
+    echo "$status" > "__snapshots__/$name.status.txt"
   done
   git add --intent-to-add "$suite"
-  git --no-pager diff --compact-summary HEAD -- "$suite"
+  git --no-pager diff --compact-summary HEAD -- "__snapshots__"
   echo
 done
+cd "$owd"
+git diff --exit-code --shortstat HEAD -- "$PWD"/**/__tests__/__snapshots__
