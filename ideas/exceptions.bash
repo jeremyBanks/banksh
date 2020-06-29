@@ -22,8 +22,6 @@ implementation of exception-style error handling in Bash, with `try-catch`
 blocks, error "types", and stack traces.
 
 ```sh
-source exceptions.bash
-
 function fread {
   if [[ ! -f $1 ]]; then
     throw IOError: "the file '$1' does not exist"
@@ -55,8 +53,6 @@ Are you sure you entered that path correctly? IOError: the file 'does-not.txt' d
 Unhandled errors will exit with a stack trace, whether they're `thrown` or not.
 
 ```sh
-source exceptions.bash
-
 function event-loop {
   while true; do
     tick
@@ -323,15 +319,13 @@ fi
 # Otherwise, it has been run directly, so we'll continue and run the examples.
 
 
-:<<'source exceptions.bash' pardon the mess
+:<<'```bash' pardon the mess
 ```
 
 Examples in [`exceptions.bash`][2]
 ----------------------------------
 
 ```bash
-source exceptions.bash
-
 function examples {
   try
     example-1

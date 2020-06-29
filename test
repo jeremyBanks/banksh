@@ -6,7 +6,8 @@ declare name status
 
 for suite in "$PWD"/**/*.tests; do
   echo "$suite" >&2
-  for test in "$suite"/1.bash; do
+  cd "$suite"
+  for test in "$suite"/*.bash; do
     echo "$test" >&2
     name="${test%.*}"
     rm -rf "$name.status.txt"
@@ -15,10 +16,11 @@ for suite in "$PWD"/**/*.tests; do
     if [[ ! -e "$name.stdin.txt" ]]; then
       touch "$name.stdin.txt"
     fi
-    bash "$test" <"$name.stdin.txt" 1>"$name.stdout.txt" 2>"$name.stderr.txt"
-    echo "$?" > "$name.status.txt"
+    status=0
+    bash "$test" <"$name.stdin.txt" 1>"$name.stdout.txt" 2>"$name.stderr.txt" || status="$?"
+    echo "$status" > "$name.status.txt"
   done
-  git add "$suite"
-  git --no-pager diff -R --compact-summary HEAD -- "$suite"
+  git add --intent-to-add "$suite"
+  git --no-pager diff --compact-summary HEAD -- "$suite"
   echo
 done
