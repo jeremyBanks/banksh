@@ -1,4 +1,4 @@
-eval "$(cat "$(dirname "${BASH_SOURCE[0]}")/../exceptions")"
+eval "$(cat "$(dirname "${BASH_SOURCE[0]}")/../../.banksh/lib/exceptions")"
 
 function alpha {
   beta -v2

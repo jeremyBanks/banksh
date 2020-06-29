@@ -21,63 +21,11 @@ I present a proof-of-concept using aliases, traps, and functions to provide a
 implementation of exception-style error handling in Bash, with `try-catch`
 blocks, error "types", and stack traces.
 
-```sh
-function fread {
-  if [[ ! -f $1 ]]; then
-    throw IOError: "the file '$1' does not exist"
-  else
-    cat "$1"
-  fi
-}
-
-try # XXX: is this broken because of subshells? man you need to test this.
-  declare contents="$(fread "$1")"
-catch IOError
-  echo "Are you sure entered that path correctly? $(caught)"
-  exit 1
-yrt
-
-echo "The file named '$1' contained ${#contents} characters."
-```
-
-```
-$ bash example-1 exists.txt
-The file named 'exists.txt' contained 42 characters.
-```
-
-```
-$ bash example-1 does-not.txt
-Are you sure you entered that path correctly? IOError: the file 'does-not.txt' does not exist.
-```
+`TODO EXAMPLE`
 
 Unhandled errors will exit with a stack trace, whether they're `thrown` or not.
 
-```sh
-function event-loop {
-  while true; do
-    tick
-    sleep 1
-  done
-}
-
-function tick {
-  cat /bad/path
-}
-
-event-loop
-```
-
-```
-$ bash example-2
-Traceback (most recent call last):
-  File "example-2", line 42, in main
-  File "example-2", line 2, in example-2
-  File "example-2", line 8, in event_loop
-  File "example-2", line 12, in tick
-CommandError/cat/1: command 'cat /bad/path/' returned non-zero exit status 1
-```
-
-([More examples below][examples].)
+`TODO EXAMPLE`
 
 Exceptions are just strings, and their "types" are just prefixes like
 "TypeError". The exception throwing/catching state is stored in a global
@@ -132,8 +80,6 @@ CommandStatus1Error: command 'false' failed with status 1.
 ```
 
 ### Catching
-
-
 
 
 API documentation style stuff here.
@@ -370,6 +316,23 @@ $stack"
       return 1
     fi
   }
+
+  # If the previous command failed, raise that error instead of running the
+  # specified command, "shielding" the command from the erroneous execution
+  # state. This is only required for cases where an error would otherwise be
+  # unintentionally silenced.
+  
+  # For example, `echo "$(false)"` will silence false's failure status, but
+  # `shield echo "$(false)"` will check for and `propogate it.
+  # will propogate it.
+  #
+  # Unfortunately, there are some cases that sheild can't help with, these
+  # should be avoided. For example, there's no way to catch the failure in
+  # `shield echo "$(false) $(shield true)"`
+  function shield {
+    __status__ "$?"
+    "$@"
+  }
 }
 
 :<<'<!-- -->' pardon the mess
@@ -442,6 +405,11 @@ To Do (before publishing this post)
   ```
 
   as a distinct meaning for numerc keys.
+- allow commands to be called with dynamic arguments without
+  clobbering their errors by wrapping in a function that checks the exit status
+  before running its command.
+- add lints around $() to shellcheck
+- forbid echo "$(command) $(command)"
 
 Are you hiring? I'm looking!
 ----------------------------
@@ -473,6 +441,25 @@ When I refer to regular Bash error handling above, I am referring to the
 various ways a command's failure (nonzero exit status) can be suppressed,
 instead of exiting the script, while the `-e`/`-o errexit` setting is enabled.
 These are described below in the Bash manual's description of the setting.
+
+One very annoying and non-obvious case (because ShellCheck doesn't warn about
+it) is that if you do:
+
+```bash
+echo "$(command)"
+```
+
+you will catch/silence a failure from `command`, because it will be clobbered
+by the exit status from `echo`. To be safe, this instead needs to be written as
+
+```bash
+declare arg
+arg="$(command)"
+echo "$arg"
+```
+
+The `shield` function defined above tries to help make this less cumbersome
+in simple cases, but it's still clunky.
 
 > Exit immediately if a pipeline (which may consist of a single simple command),
 > a list, or a compound command (see SHELL GRAMMAR above), exits with a non-zero

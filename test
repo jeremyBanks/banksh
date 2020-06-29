@@ -31,14 +31,14 @@ for suite in "$PWD"/**/__tests__; do
     expected="__snapshots__/${test%.spec.bash}.txt"
     
     if [[ ! -f "$expected" ]]; then
-      printf "stderr:\nstdout:\nstatus: 0\n" > "$expected"
+      printf "stderr:\n\nstdout:\n\nstatus: 0\n" > "$expected"
     fi
     touch "$actual"
     
     status=0
     printf "stderr:\n" >> "$actual"
     stdout="$(bash "$test" 2>>"$actual" | printf "%s\n" "$(cat -)")" || status="$?"
-    printf "stdout:\n%sstatus: %s\n" "$stdout" "$status" >> "$actual"
+    printf "\nstdout:\n%s\nstatus: %s\n" "$stdout" "$status" >> "$actual"
 
     if diff --old-group-format="$(tput setaf 12 || :)%<$(tput sgr0 || :)" --new-group-format="$(tput setaf 9 || :)%>$(tput sgr0 || :)" --unchanged-group-format="$(tput setaf 8 || :)%=$(tput sgr0 || :)" --color=auto "$expected" "$actual"; then
       passes+=1

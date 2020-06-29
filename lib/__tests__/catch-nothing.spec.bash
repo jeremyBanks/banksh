@@ -1,4 +1,4 @@
-eval "$(cat "$(dirname "${BASH_SOURCE[0]}")/../exceptions")"
+eval "$(cat "$(dirname "${BASH_SOURCE[0]}")/../../.banksh/lib/exceptions")"
 
 try
   echo hello world
