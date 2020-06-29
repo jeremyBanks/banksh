@@ -1,14 +1,14 @@
-/home/jeremy/banksh/ideas/exceptions.tests/undecorated-error.bash: line 16: ten-four: command not found
+./undecorated-error.bash: line 16: ten-four: command not found
 Traceback (most recent call last):
-  File "/home/jeremy/banksh/ideas/exceptions.tests/undecorated-error.bash", line 19
+  File "./undecorated-error.bash", line 19
     alpha
-  File "/home/jeremy/banksh/ideas/exceptions.tests/undecorated-error.bash", line 4, in alpha
+  File "./undecorated-error.bash", line 4, in alpha
     beta 
-  File "/home/jeremy/banksh/ideas/exceptions.tests/undecorated-error.bash", line 8, in beta
+  File "./undecorated-error.bash", line 8, in beta
     gamma
-  File "/home/jeremy/banksh/ideas/exceptions.tests/undecorated-error.bash", line 12, in gamma
+  File "./undecorated-error.bash", line 12, in gamma
     delta
-  File "/home/jeremy/banksh/ideas/exceptions.tests/undecorated-error.bash", line 16, in delta
+  File "./undecorated-error.bash", line 16, in delta
     ten-four
-  File "/home/jeremy/banksh/ideas/exceptions.tests/undecorated-error.bash", line 174, in __on_err__
-CommandError: Command 'ten-four' failed with status 127
+  File "./undecorated-error.bash", line 174, in __on_err__
+UnknownStatus127Error: Command 'ten-four' failed with status 127.

@@ -86,6 +86,13 @@ handled like a normal error or by a matching `try-catch-ryt` block. We use
 Bash traps to reset the exception state if an error is handled outside of a
 `catch` block, and to display the stack trace if one isn't handled at all.
 
+Usage
+-----
+
+API documentation style stuff here.
+
+Explanation about why I'm sad but we do need to use eval, I think.
+
 Implementation in [`exceptions.bash`][2]
 ----------------------------------------
 
@@ -171,7 +178,7 @@ Implementation in [`exceptions.bash`][2]
     declare -r command="$2"
 
     if [[ $__thrown_status__ = 0 ]]; then
-      __status__ "$status" || throw CommandError: "Command '$command' failed with status $status"
+      __status__ "$status" || throw UnknownStatus"$status"Error: "Command '$command' failed with status $status."
     fi
 
     return "$status"

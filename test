@@ -7,7 +7,7 @@ declare name status
 for suite in "$PWD"/**/*.tests; do
   echo "$suite" >&2
   cd "$suite"
-  for test in "$suite"/*.bash; do
+  for test in ./*.bash; do
     echo "$test" >&2
     name="${test%.*}"
     rm -rf "$name.status.txt"
