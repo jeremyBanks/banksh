@@ -1,0 +1,2 @@
+/home/jeremy/banksh/ideas/expections.tests/1.bash: line 1: pushd: 1.bash: No such file or directory
+/home/jeremy/banksh/ideas/expections.tests/1.bash: line 2: ../exceptions.bash: No such file or directory

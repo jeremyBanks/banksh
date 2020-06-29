@@ -19,5 +19,6 @@ for suite in "$PWD"/**/*.tests; do
     echo "$?" > "$name.status.txt"
   done
   git add "$suite"
-  git --no-pager diff HEAD -- "$suite"
+  git --no-pager diff -R --compact-summary HEAD -- "$suite"
+  echo
 done
