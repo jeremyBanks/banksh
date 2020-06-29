@@ -1,19 +1,19 @@
 eval "$(cat "$(dirname "${BASH_SOURCE[0]}")/../exceptions.bash")"
 
 function alpha {
-  beta 
+  beta -v2
 }
 
 function beta {
-  gamma
+  gamma -m "hello"
 }
 
 function gamma {
-  delta
+  delta --diffstat
 }
 
 function delta {
-  ten-four
+  ten-four @roger
 }
 
 alpha

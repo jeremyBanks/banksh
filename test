@@ -2,13 +2,18 @@
 # shellcheck source=./libs/base.bash
 source /dev/null; eval "$(cat "$(dirname -- "$0")/libs/base.bash")"
 
+# Simple snapshot testing for Bash scripts, using Git.
+
 declare owd="$PWD"
-declare name status
+declare name
+declare status
+declare -i passes=0
+declare -i failures=0
 for suite in "$PWD"/**/__tests__; do
-  echo "$suite" >&2
+  echo "$suite/" >&2
   cd "$suite"
   mkdir -p "__snapshots__"
-  for test in ./*.spec.bash; do
+  for test in *.spec.bash; do
     echo "$test" >&2
     name="$(basename "${test%.spec.bash}")"
     rm -rf "__snapshots__/$name.status.txt"
@@ -20,10 +25,23 @@ for suite in "$PWD"/**/__tests__; do
     status=0
     bash "$test" <"__snapshots__/$name.stdin.txt" 1>"__snapshots__/$name.stdout.txt" 2>"__snapshots__/$name.stderr.txt" || status="$?"
     echo "$status" > "__snapshots__/$name.status.txt"
+    git add --intent-to-add "$suite"
+    if git --no-pager diff --exit-code --shortstat HEAD -- "__snapshots__/$name.*"; then
+      passes+=1
+    else
+      failures+=1
+    fi
   done
-  git add --intent-to-add "$suite"
-  git --no-pager diff --compact-summary HEAD -- "__snapshots__"
   echo
 done
 cd "$owd"
-git diff --exit-code --shortstat HEAD -- "$PWD"/**/__tests__/__snapshots__
+declare -i total=$((passes + failures))
+declare changes
+if git diff --quiet HEAD -- "$PWD"/**/__tests__/__snapshots__; then
+  echo "$(tput setaf 2 || :)All $passes tests passed.$(tput sgr0 || :)"
+  exit 0
+else
+  echo "$(tput setaf 9 || :)$(tput smul || :)$failures of $total tests failed$(tput rmul || :) (snapshots did not match committed data)$(tput sgr0 || :)"
+  git diff --exit-code --compact-summary HEAD -- "$PWD"/**/__tests__/__snapshots__
+  exit 1
+fi
