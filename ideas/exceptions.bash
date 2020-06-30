@@ -492,7 +492,7 @@ in simple cases, but it's still clunky.
   [A1]: #appendix-1-bash-manual-description-of--e-o-errexit-setting
   [examples]: #examples-in-exceptionsbash
   [hire me]: #are-you-hiring-im-looking
-  [discuss this on dev.to]: https://dev.to/banks/typed-exceptions-with-stack-traces-in-bash-226n
+  [discuss this on dev.to]: https://dev.to/banks/404
   [Jeremy Banks]: mailto:_@jeremy.ca
   [Jacob Haven]: https://github.com/jacobhaven
 

@@ -1,0 +1,79 @@
+Stop Ignoring Bash Errors
+=========================
+
+posted by [Jeremy Banks], July 2020  
+you may [discuss this on dev.to]
+
+  [Jeremy Banks]: mailto:_@jeremy.ca
+  [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-bash-errors-1omi
+
+<!-- https://banksh.jeremy.ca/ideas/stop-ignoring-bash-errors -->
+
+There are few things more frustrating than running a program, only for it to silently crash, without any error message to tell you what went wrong. One of those few things is for the program to accidentally ignore an error, telling you that everything's fine, but continuing in an invalid state and silently corrupting your data.
+
+Bash makes it easy to accidentally write scripts that do both. 😬
+
+However, with a bit of care it is possible to write robust, reliable scripts that keep you and your users happy. Here are some error handling practices to keep in mind.
+
+## What do we mean by errors?
+
+Bash doesn't have exceptions or error types as we might be used to in other langues. However, every command, whether it's built-in to Bash or an external program, returns an "exit status code" between `0` and `255` when it finishes executing. Successful commands return `0`, while commands that fail return a between code between `1` and `255`.
+
+When I talk about "errors" in Bash in this post, I'm referring to any command which exits with a non-zero exit code in a context where it isn't expected. For example, if you had a program that started with
+
+```bash
+cat example.txt
+```
+
+and `example.txt` did not exist, that would be an error. Nothing is handling the failure, so the program would either crash or continue in an invalid state. However if you have an `if` statement like
+
+```bash
+if test -e example.txt; then
+  echo "Example found"
+else
+  echo "Example not found"
+fi
+```
+
+the command `test -e example.txt` may fail, but the `if` statement is expecting a command that might fail, and it handle that case automatically. I do *not* consider that an "error" for the purpose of this post.
+
+## Basic Commands and Pipelines
+
+```
+set -euo pipefail
+```
+
+ddd
+
+## ShellCheck
+
+[ShellCheck](https://github.com/koalaman/shellcheck) is a static analysis tool/linter for Bash scripts, and it is *invaluable*. I use it in VS Code ([extension](https://marketplace.visualstudio.com/items?itemName=timonwong.shellcheck)) and run it in CI. It flags [cases where your code might not be doing what you expect](https://github.com/koalaman/shellcheck/blob/master/README.md#user-content-gallery-of-bad-code), with links to [wiki pages explaining the problem and potential alternatives](https://github.com/koalaman/shellcheck/wiki/SC2035).
+
+Most of my recent Bash learnings have started with a ShellCheck warning code making me aware of an edge case or capability that I hadn't considered. Like any linter, you may occasionally need to ignore its warnings with an annotation like `# shellcheck disable=SC2034`, but I've found its advice is usually very good, even when it seemed weird at first.
+
+## Subshells
+
+it suprise dme64
+
+### The unfortunate case of command substitution
+
+Shut it can bevverd
+
+Further reading. 
+
+Defensive bash
+
+Shell check
+
+Not even catch 
+
+
+## Appendix 1: Bash manual description of the `-e`/`-o errexit` setting
+
+  [A1]: #appendix-1-bash-manual-description-of-raw-e-endraw-raw-o-errexit-endraw-setting
+
+> Exit immediately if a pipeline (which may consist of a single simple command), a list, or a compound command (see SHELL GRAMMAR above), exits with a non-zero status. The shell does not exit if the command that fails is part of the command list immediately following a `while` or `until` keyword, part of the test following the `if` or `elif` reserved words, part of any command executed in a `&&` or `||` list except the command following the final `&&` or `||`, any command in a pipeline but the last, or if the command's return value is being inverted with `!`. If a compound command other than a subshell returns a non-zero status because a command failed while `-e` was being ignored, the shell does not exit. A trap on `ERR`, if set, is executed before the shell exits. This option applies to the shell environment and each subshell environment separately (see COMMAND EXECUTION ENVIRONMENT above), and may cause subshells to exit before executing all the commands in the subshell.
+>
+> If a compound command or shell function executes in a context where `-e` is being ignored, none of the commands  executed  within the compound command or function body will be affected by the `-e` setting, even if `-e` is set and a command returns a failure status. If a compound command or shell function sets `-e` while executing in a context where `-e` is ignored, that setting will not have any effect until the compound command or the command containing the function call completes.
+>
+> `{ COLUMNS=2048 man bash | grep -Em1 -A32 '^\s+set \[' | grep -Em1 -A32 '^\s+-e\s{4}' | grep -Em2 -B32 '^\s+-.\s{4}' | sed '$d' | grep -EoA32 '\s{4}(\S\s{0,4})+$' | grep -Eo '\S.*$' | fmt -tw$COLUMNS; }`
