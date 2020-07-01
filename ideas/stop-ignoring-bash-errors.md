@@ -1,13 +1,16 @@
 Stop Ignoring Bash Errors
 =========================
-
 posted by [Jeremy Banks], July 2020  
 you may [discuss this on dev.to]
 
   [Jeremy Banks]: mailto:_@jeremy.ca
+  [title-a]: / "Stop Ignoring Bash Errors"
+  [title-b]: / "Robust Bash: beyond -euo pipefail"
   [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-bash-errors-1omi
   [tags]: / "bash linux tutorial"
   [canonical]: https://banksh.jeremy.ca/ideas/stop-ignoring-bash-errors
+
+  [ShellCheck]: https://github.com/koalaman/shellcheck
 
 There are few things more frustrating than starting a program, only for it to silently crash, without any error message to tell you what went wrong. One of those few things is for the program to accidentally ignore an error, telling you that everything's fine, but continuing in an invalid state and silently corrupting your data.
 
@@ -39,7 +42,7 @@ the command `test -e example.txt` may fail, but the `if` statement is expecting 
 
 ## Simple errors
 
-By default, Bash scripts will ignore most errors and continue running. The first thing we need to do in our scripts is enable Bash's basic error handling options, as follows. (This is a very common practice.)
+By default, Bash scripts will ignore most errors and continue running. The first thing we need to do in our scripts is enable Bash's basic error handling options, as follows.
 
 ```bash
 set -euo pipefail
@@ -58,8 +61,20 @@ cat example.txt | grep metadata | sort
 ```
 
 By default, the exit status of the entire pipeline will just be that of the last command, `sort`. This can succeed even if `example.txt` does not exist and an earlier command like `cat` fails. `pipefail` changes this behaviour so that the pipeline is marked as failed if *any* of the commands fail. (Subsequent commands in the pipeline will still be executed. If multiple fail, the exit status of the last failing command will be used.)
+ 
+Setting `set -euo pipefail` is a very common practice for many shells, but for Bash in particular there's one more option you should also be setting:
+
+```bash
+shopt -s inherit_errexit
+```
+
+in some other shells
 
 wait is `inherit_errexit` the option I needed?!
+
+no that doesn't seem to do... anything?
+
+what does it do?
 
 SHOULD THIS ENTIRE POST BE ABOUT THAT?!
 
@@ -67,7 +82,7 @@ SHOULD THIS ENTIRE POST BE ABOUT THAT?!
 
 Adopting those settings made my scripts much more reliable, but I was still finding some bugs in them. They came from me misunderstanding subtleties of Bash's syntax, where my code wasn't doing what I thought it was doing. I might forget which terms need quoting in a condition like `[[ $x -eq "$y" ]]`, or where I can and can't omit the `$` before a variable in an expression like `$(( x = y ))`. I tried to keep the rules straight, but there were too many to absorb at once and it felt hopeless, until I discovered ShellCheck.
 
-[ShellCheck](https://github.com/koalaman/shellcheck) is a static analysis tool/linter for Bash scripts, and it is *invaluable*. I use it in VS Code ([extension](https://marketplace.visualstudio.com/items?itemName=timonwong.shellcheck)) and run it in CI. It flags [cases where your code might not be doing what you expect](https://github.com/koalaman/shellcheck/blob/master/README.md#user-content-gallery-of-bad-code), with links to [wiki pages explaining the problem and potential alternatives](https://github.com/koalaman/shellcheck/wiki/SC2035).
+[ShellCheck] is a static analysis tool/linter for Bash scripts, and it is *invaluable*. I use it in VS Code ([extension](https://marketplace.visualstudio.com/items?itemName=timonwong.shellcheck)) and run it in CI. It flags [cases where your code might not be doing what you expect](https://github.com/koalaman/shellcheck/blob/master/README.md#user-content-gallery-of-bad-code), with links to [wiki pages explaining the problem and potential alternatives](https://github.com/koalaman/shellcheck/wiki/SC2035).
 
 Most of my recent Bash learnings have started with a ShellCheck warning code making me aware of an edge case or capability that I hadn't considered. Like any linter, you may occasionally need to ignore its warnings with an annotation like `# shellcheck disable=SC2034`, but I've found its advice is usually very good, even when it seemed counterintuitive at first.
 
@@ -117,6 +132,32 @@ not cases where it's obvious and expected.
 ## Further questions
 
 Do you know how to deal?
+
+## Bonus suggestion
+
+The default handling of glob expressions in Bash is confusing. Consider the command
+
+```bash
+ls ./builds/bin-*/
+```
+
+If `builds` contains one or more directories whose names start with `bin-`, you'll get an argument for each, expanding to something like this:
+
+```bash
+ls ./builds/bin-windows/ ./builds/bin-linux/
+```
+
+However, if there's no match, the glob expression isn't replaced, it's just passed to the command as-is, typically producing an error or unexpected behaviour:.
+
+```
+ls: cannot access './builds/bin-*/': No such file or directory
+```
+
+There are two more-reasonable alternative behaviours, and I strongly suggest you set one of them: `shopt -s nullglob` will replace the glob expression with the empty string if it doesn't match, and `shopt -s failglob` will raise an error.
+
+## Conclusion
+
+Writing robust Bash scripts is tricky, but not impossible. Start your scripts with `set -euo pipefail; shopt -s inherit_errexit -s nullglob` and use [ShellCheck], and you'll be 95% of the way there.
 
 ## Appendix 1: Bash manual description of the `-e`/`-o errexit` setting
 
