@@ -50,7 +50,7 @@ set -euo pipefail
 
 Here we enabling three options at once. Let's break them down.
 
-`set -e` (aka `-o errexit`) causes *most* failing commands to immediately return from the enclosing function, propagating their error exit status code to the calling function. If the calling function also doesn't handle the error, it will continue up the stack, eventually exiting the script with that exit status code. Unfortunately, even with this option enabled there are several cases where errors can be silently ignored, as we'll discuss below under *Subshells*.
+`set -e` (aka `-o errexit`) causes *most* failing commands to immediately return from the enclosing function, propagating their error exit status code to the calling function. If the calling function also doesn't handle the error, it will continue up the stack, eventually exiting the script with that exit status code. (Note that there are still some cases where errors can be silently ignored, discussed below.)
 
 `set -u` (aka `-o nounset`) makes it an error to refer to a variable like `$X` if it hasn't been defined, either in the script or as an environment variable, instead of treating it as an empty string. Often, this is a typo and a bug. There are certainly some cases where you'll need to handle reference possibly-undefined variables, but they should be indicated explicitly: you can use `${X-}` instead of `$X` to indicate where you'd like to use an empty string if a variable isn't defined.
 
@@ -68,15 +68,13 @@ Setting `set -euo pipefail` is a very common practice for many shells, but for B
 shopt -s inherit_errexit
 ```
 
-in some other shells
+By default, when you use command substitution in Bash, the `-e` setting is not applied. For example, if we had
 
-wait is `inherit_errexit` the option I needed?!
+```bash
+echo "Command output: $(false; date)"
+```
 
-no that doesn't seem to do... anything?
-
-what does it do?
-
-SHOULD THIS ENTIRE POST BE ABOUT THAT?!
+the command would successfully output the result of `date`, even though the failing `false` command should have exited the script first. Enabling `inherit_errexit` allows the command substitution to inherit our `-e` setting, so `date` will not be run. (However, please note that the error status of the command substitution is still ignored. Even though the parenthesized expression returned a nonzero exit status, `echo` will still run successfully. This is discussed in more detail [below][substitution].)
 
 ## ShellCheck
 
@@ -102,36 +100,65 @@ my_function() (
 )
 
 other_function() {
-  echo but this is NOT, because I used braces instead of parentheses
+  echo but this is NOT, because I used curly braces instead of round parentheses
 }
-
 ```
 
-One of the things I was most shocked to learn about Bash was that almost every time
+This is why if you try to set a global variable from inside of parentheses, the change won't be visible outside: you're only setting the value in the child process.
 
-it suprise dme64
+```bash
+declare x
+x=first
+(x=second)
+echo "$x"  # echoes "first"
+```
 
-how do they behave? fine.
+This usually doesn't cause a problem for error handling&mdash;our settings are propagated to the subshell, and the exit status of the subshell is propogated back. However, there is one major exception...
 
 ### The unfortunate case of command substitution
 
-Shut it can bevverd
+  [substitution]: #the-unfortunate-case-of-command-substitution
 
-Further reading. 
+Even with every available setting enabled, failures in command substitution subshells are silenced/masked and do not cause a failure in the original shell process. For example:
 
-Defensive bash
+```bash
+set -euo pipefail
+shopt -s inherit_errexit
 
-Shell check
+echo "$(
+  echo &>2 "error: everything is broken"
+  exit 66
+)"
 
-Not even catch 
+echo "but this is still running"
+```
 
-WHAT DO I WANT TO COMMUNICATE
-cases where errors are suppressed that you might not expect.
-not cases where it's obvious and expected.
+```
+error: everything is broken
+but this is still running
+```
 
-## Further questions
+As far as I can tell, there is no way to change this behaviour. **If there is some way I've missed, please let me know!** There are workarounds, but they're clunky.
 
-Do you know how to deal?
+The exit status of these subshells *is* returned to the parent shell, however, it's never checked before it is overwritten by the return status of the original command (`echo` in the case above). If we put the command substitution in an assigment expression on its own, instead of as an argument to another command, the exit status won't be overwritten. For example:
+
+```bash
+set -euo pipefail
+shopt -s inherit_errexit
+
+declare output
+output="$(
+  echo >&2 "error: everything is broken"
+  exit 66
+)"
+echo "$output"
+```
+
+```
+error: everything is broken
+```
+
+This will behave properly, with the failure in `output="$(...)"` exiting the script.
 
 ## Bonus suggestion
 
@@ -157,9 +184,10 @@ There are two more-reasonable alternative behaviours, and I strongly suggest you
 
 ## Conclusion
 
-Writing robust Bash scripts is tricky, but not impossible. Start your scripts with `set -euo pipefail; shopt -s inherit_errexit -s nullglob` and use [ShellCheck], and you'll be 95% of the way there.
+Writing robust Bash scripts is tricky, but not impossible. Start your scripts with `set -euo pipefail; shopt -s inherit_errexit nullglob` and use [ShellCheck], and you'll be 95% of the way there!
 
 ## Appendix 1: Bash manual description of the `-e`/`-o errexit` setting
+
 
   [A1]: #appendix-1-bash-manual-description-of-raw-e-endraw-raw-o-errexit-endraw-setting
 
