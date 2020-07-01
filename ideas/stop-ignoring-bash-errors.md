@@ -6,10 +6,9 @@ you may [discuss this on dev.to]
 
   [Jeremy Banks]: mailto:_@jeremy.ca
   [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-bash-errors-1omi
+  [canonical]: https://banksh.jeremy.ca/ideas/stop-ignoring-bash-errors
 
-<!-- https://banksh.jeremy.ca/ideas/stop-ignoring-bash-errors -->
-
-There are few things more frustrating than running a program, only for it to silently crash, without any error message to tell you what went wrong. One of those few things is for the program to accidentally ignore an error, telling you that everything's fine, but continuing in an invalid state and silently corrupting your data.
+There are few things more frustrating than starting a program, only for it to silently crash, without any error message to tell you what went wrong. One of those few things is for the program to accidentally ignore an error, telling you that everything's fine, but continuing in an invalid state and silently corrupting your data.
 
 Bash makes it easy to accidentally write scripts that do both. 😬
 
@@ -19,7 +18,7 @@ However, with a bit of care it is possible to write robust, reliable scripts tha
 
 Bash doesn't have exceptions or error types as we might be used to in other langues. However, every command, whether it's built-in to Bash or an external program, returns an "exit status code" between `0` and `255` when it finishes executing. Successful commands return `0`, while commands that fail return a between code between `1` and `255`.
 
-When I talk about "errors" in Bash in this post, I'm referring to any command which exits with a non-zero exit code in a context where it isn't expected. For example, if you had a program that started with
+When I talk about "errors" in Bash in this post, I'm referring to any command which exits with a non-zero exit code in a context where it isn't explicitly expected. For example, if you had a program that started with
 
 ```bash
 cat example.txt
@@ -35,15 +34,25 @@ else
 fi
 ```
 
-the command `test -e example.txt` may fail, but the `if` statement is expecting a command that might fail, and it handle that case automatically. I do *not* consider that an "error" for the purpose of this post.
+the command `test -e example.txt` may fail, but the `if` statement is expecting its condition to be a command that might fail, and it handle that case automatically. I do *not* consider that an "error" for the purpose of this post. The same reasoning applies to cases like `while COMMAND; do ...` and `COMMAND || return 0`; see [the Bash manual][A1] for the full list of exceptions.
 
-## Basic Commands and Pipelines
+## Simple errors
 
-```
+By default, Bash scripts will ignore most errors and continue running. The first thing we need to do in our scripts is enable Bash's basic error handling options, as follows. This is a very common practice.
+
+```bash
 set -euo pipefail
 ```
 
-ddd
+Here we enabling three options at once. Let's break them down.
+
+`set -e` (aka `-o errexit`) causes *most* failing commands to immediately return from the enclosing function, propagating their error exit status code to the calling function. If the calling function also doesn't handle the error, it will continue up the stack, eventually exiting the script with that exit status code. Unfortunately, even with this option enabled there are several cases where errors can be silently ignored, as we'll discuss below.
+
+`set -u` (aka `-o nounset`) makes it an error to refer to a variable like `$X` if it hasn't been defined, either in the script or as an environment variable, instead of treating it as an empty string. There are certainly cases where you'll want to allow this to happen, but they should be indicated explicitly: you can use `${X-}` instead of `$X` to indicate where you'd like to use an empty string if a variable isn't defined.
+
+`set -o pipefail` does something else.
+
+
 
 ## ShellCheck
 
@@ -54,6 +63,8 @@ Most of my recent Bash learnings have started with a ShellCheck warning code mak
 ## Subshells
 
 it suprise dme64
+
+how do they behave? fine.
 
 ### The unfortunate case of command substitution
 
@@ -67,6 +78,13 @@ Shell check
 
 Not even catch 
 
+WHAT DO I WANT TO COMMUNICATE
+cases where errors are suppressed that you might not expect.
+not cases where it's obvious and expected.
+
+## Further questions
+
+Do you know how to deal?
 
 ## Appendix 1: Bash manual description of the `-e`/`-o errexit` setting
 
@@ -76,4 +94,4 @@ Not even catch
 >
 > If a compound command or shell function executes in a context where `-e` is being ignored, none of the commands  executed  within the compound command or function body will be affected by the `-e` setting, even if `-e` is set and a command returns a failure status. If a compound command or shell function sets `-e` while executing in a context where `-e` is ignored, that setting will not have any effect until the compound command or the command containing the function call completes.
 >
-> `{ COLUMNS=2048 man bash | grep -Em1 -A32 '^\s+set \[' | grep -Em1 -A32 '^\s+-e\s{4}' | grep -Em2 -B32 '^\s+-.\s{4}' | sed '$d' | grep -EoA32 '\s{4}(\S\s{0,4})+$' | grep -Eo '\S.*$' | fmt -tw$COLUMNS; }`
+> *source:* `{ COLUMNS=2048 man bash | grep -Em1 -A32 '^\s+set \[' | grep -Em1 -A32 '^\s+-e\s{4}' | grep -Em2 -B32 '^\s+-.\s{4}' | sed '$d' | grep -EoA32 '\s{4}(\S\s{0,4})+$' | grep -Eo '\S.*$' | fmt -tw$COLUMNS; }`
