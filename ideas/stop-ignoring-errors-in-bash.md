@@ -5,8 +5,8 @@ posted by [Jeremy Banks], July 2020
 you may [discuss this on dev.to]
 
   [Jeremy Banks]: mailto:_@jeremy.ca
-  [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-bash-errors-1omi
-  [canonical]: https://banksh.jeremy.ca/ideas/stop-ignoring-bash-errors
+  [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-errors-in-bash-3co5
+  [canonical]: https://banksh.jeremy.ca/ideas/stop-ignoring-errors-in-bash
   [tags]: # (#bash #linux #tutorial)
 
   [ShellCheck]: https://github.com/koalaman/shellcheck
