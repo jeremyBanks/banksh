@@ -6,7 +6,7 @@ you may [discuss this on dev.to]
 
   [Jeremy Banks]: mailto:_@jeremy.ca
   [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-errors-in-bash-3co5
-  [canonical]: https://banksh.jeremy.ca/ideas/stop-ignoring-errors-in-bash
+  [canonical]: https://banksh.jeremy.ca/ideas/robust-error-handling
   [tags]: # (#bash #linux #tutorial)
 
   [ShellCheck]: https://github.com/koalaman/shellcheck

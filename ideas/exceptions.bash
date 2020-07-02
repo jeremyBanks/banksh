@@ -1,7 +1,7 @@
 #!/bin/bash
 :<<'```bash' [pardon the mess, this is an imperfect Bash-Markdown polyglot.][1]
 
-[WIP] Exception-Style Error Handling in Bash
+Exception-Style Error Handling in Bash
 ======================================
 
 posted by [Jeremy Banks], July 2020  
