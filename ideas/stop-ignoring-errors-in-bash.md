@@ -1,7 +1,7 @@
-Stop Ignoring Bash Errors
-=========================
+Robust error handling in Bash
+=============================
 
-posted by [Jeremy Banks], July 2020  
+posted by [Jeremy Banks] on the 2<sup>nd</sup> of July 2020  
 you may [discuss this on dev.to]
 
   [Jeremy Banks]: mailto:_@jeremy.ca
@@ -14,7 +14,7 @@ you may [discuss this on dev.to]
   [gallery]: https://github.com/koalaman/shellcheck/blob/master/README.md#user-content-gallery-of-bad-code
   [SC2035]: https://github.com/koalaman/shellcheck/wiki/SC2035
 
-Errors happen. Even if we write a perfect program, it might be provided with invalid input, or unexpectedly disconnected from the network. The key to writing reliable software isn't to prevent all errors, but to ensure that all errors are handled in a predictible way.
+Errors happen. Even if we write a perfect program, it might be provided with invalid input, or unexpectedly disconnected from the network. The key to writing reliable software isn't to prevent all errors, but to ensure that all errors are handled in a predictable way.
 
 Bash does not enforce precise error handling. In fact, by default it simply ignores most errors. However, with a bit of care it is possible to write robust, reliable scripts that keep you and your users happy. Here are some error handling practices to keep in mind.
 
@@ -78,7 +78,7 @@ the command would successfully output the result of `date`, even though the fail
 
 ## ShellCheck
 
-Adopting those settings made my scripts much more reliable, but I was still finding some bugs in them. They came from me misunderstanding subtleties of Bash's syntax, where my code wasn't doing what I thought it was doing. I might forget which terms need quoting in a condition like `[[ $x -eq "$y" ]]`, or where I can and can't omit the `$` before a variable in an expression like `$(( x = y ))`. I tried to keep the rules straight, but there were too many to absorb at once and it felt hopeless, until I discovered ShellCheck.
+Adopting those settings made my scripts much more reliable, but I was still finding some bugs in them. Many came from me misunderstanding subtleties of Bash's syntax, where my code wasn't doing what I thought it was doing. I might forget which terms need quoting in a condition like `[[ $x -eq "$y" ]]`, or where I can and can't omit the `$` before a variable in an expression like `$(( x = y ))`. I tried to keep the rules straight, but there were too many to absorb at once and it felt hopeless, until I discovered ShellCheck.
 
 [ShellCheck] is a static analysis tool/linter for Bash scripts, and it is *invaluable*. I use it in VS Code ([extension]) and run it in CI. It flags [cases where your code might not be doing what you expect][gallery], with links to [wiki pages explaining the problem and potential alternatives][SC2035].
 
@@ -113,7 +113,7 @@ x=first
 echo "$x"  # echoes "first"
 ```
 
-This usually doesn't cause a problem for error handling&mdash;our settings are propagated to the subshell, and the exit status of the subshell is propogated back. However, there is one major exception...
+This usually doesn't cause a problem for error handling&mdash;our settings are propagated to the subshell, and the exit status of the subshell is propagated back. However, there is one major exception...
 
 ### The unfortunate case of command substitution
 
@@ -140,7 +140,7 @@ but this is still running
 
 As far as I can tell, there is no way to change this behaviour. **If there is some way I've missed, please let me know!** There are workarounds, but they're clunky.
 
-The exit status of these subshells *is* returned to the parent shell, however, it's never checked before it is overwritten by the return status of the original command (`echo` in the case above). If we put the command substitution in an assigment expression on its own, instead of as an argument to another command, the exit status won't be overwritten. For example:
+The exit status of these subshells *is* returned to the parent shell, however, it's never checked before it is overwritten by the return status of the original command (`echo` in the case above). If we put the command substitution in an assignment expression on its own, instead of as an argument to another command, the exit status won't be overwritten. For example:
 
 ```bash
 set -euo pipefail
