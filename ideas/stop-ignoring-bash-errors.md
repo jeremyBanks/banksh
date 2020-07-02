@@ -1,24 +1,26 @@
 Stop Ignoring Bash Errors
 =========================
+
 posted by [Jeremy Banks], July 2020  
 you may [discuss this on dev.to]
 
   [Jeremy Banks]: mailto:_@jeremy.ca
   [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-bash-errors-1omi
-  [tags]: / "bash linux tutorial"
   [canonical]: https://banksh.jeremy.ca/ideas/stop-ignoring-bash-errors
+  [tags]: # (#bash #linux #tutorial)
 
   [ShellCheck]: https://github.com/koalaman/shellcheck
+  [extension]: https://marketplace.visualstudio.com/items?itemName=timonwong.shellcheck
+  [gallery]: https://github.com/koalaman/shellcheck/blob/master/README.md#user-content-gallery-of-bad-code
+  [SC2035]: https://github.com/koalaman/shellcheck/wiki/SC2035
 
-[ED: rewrite this] There are few things more frustrating than starting a program, only for it to silently crash, without any error message to tell you what went wrong. One of those few things is for the program to accidentally ignore an error, telling you that everything's fine, but continuing in an invalid state and silently corrupting your data.
+Errors happen. Even if we write a perfect program, it might be provided with invalid input, or unexpectedly disconnected from the network. The key to writing reliable software isn't to prevent all errors, but to ensure that all errors are handled in a predictible way.
 
-Bash makes it easy to accidentally write scripts that do both. 😬
-
-However, with a bit of care it is possible to write robust, reliable scripts that keep you and your users happy. Here are some error handling practices to keep in mind.
+Bash does not enforce precise error handling. In fact, by default it simply ignores most errors. However, with a bit of care it is possible to write robust, reliable scripts that keep you and your users happy. Here are some error handling practices to keep in mind.
 
 ## What do we mean by errors?
 
-Bash doesn't have exceptions or error types as we might be used to in other langues. However, every command, whether it's built-in to Bash or an external program, returns an "exit status code" between `0` and `255` when it finishes executing. Successful commands return `0`, while commands that fail return a code between `1` and `255`.
+Bash doesn't have exceptions or error types as we might be used to in other languages. However, every command, whether it's built-in to Bash or an external program, returns an "exit status code" between `0` and `255` when it finishes executing. Successful commands return `0`, while commands that fail return a code between `1` and `255`.
 
 When I talk about "errors" in Bash in this post, I'm referring to any command which exits with a non-zero exit code in a context where it isn't explicitly expected. For example, if you had a program that started with
 
@@ -78,7 +80,7 @@ the command would successfully output the result of `date`, even though the fail
 
 Adopting those settings made my scripts much more reliable, but I was still finding some bugs in them. They came from me misunderstanding subtleties of Bash's syntax, where my code wasn't doing what I thought it was doing. I might forget which terms need quoting in a condition like `[[ $x -eq "$y" ]]`, or where I can and can't omit the `$` before a variable in an expression like `$(( x = y ))`. I tried to keep the rules straight, but there were too many to absorb at once and it felt hopeless, until I discovered ShellCheck.
 
-[ShellCheck] is a static analysis tool/linter for Bash scripts, and it is *invaluable*. I use it in VS Code ([extension](https://marketplace.visualstudio.com/items?itemName=timonwong.shellcheck)) and run it in CI. It flags [cases where your code might not be doing what you expect](https://github.com/koalaman/shellcheck/blob/master/README.md#user-content-gallery-of-bad-code), with links to [wiki pages explaining the problem and potential alternatives](https://github.com/koalaman/shellcheck/wiki/SC2035).
+[ShellCheck] is a static analysis tool/linter for Bash scripts, and it is *invaluable*. I use it in VS Code ([extension]) and run it in CI. It flags [cases where your code might not be doing what you expect][gallery], with links to [wiki pages explaining the problem and potential alternatives][SC2035].
 
 Most of my recent Bash learnings have started with a ShellCheck warning code making me aware of an edge case or capability that I hadn't considered. Like any linter, you may occasionally need to ignore its warnings with an annotation like `# shellcheck disable=SC2034`, but I've found its advice is usually very good, even when it seemed counterintuitive at first.
 
@@ -172,7 +174,7 @@ If `builds` contains one or more directories whose names start with `bin-`, you'
 ls ./builds/bin-windows/ ./builds/bin-linux/
 ```
 
-However, if there's no match, the glob expression isn't replaced, it's just passed to the command as-is, typically producing an error or unexpected behaviour:.
+However, if there's no match, the glob expression isn't replaced, it's just passed to the command as-is, typically producing an error or unexpected behaviour:
 
 ```
 ls: cannot access './builds/bin-*/': No such file or directory
@@ -182,7 +184,7 @@ There are two more-reasonable alternative behaviours, and I strongly suggest you
 
 ## Conclusion
 
-Writing robust Bash scripts is tricky, but not impossible. Start your scripts with `set -euo pipefail; shopt -s inherit_errexit nullglob` and use [ShellCheck], and you'll be 95% of the way there!
+Writing robust Bash scripts is tricky, but not impossible. Start your scripts with `set -euo pipefail; shopt -s inherit_errexit nullglob` and use [ShellCheck], and you'll be 90% of the way there!
 
 ## Appendix 1: Bash manual description of the `-e`/`-o errexit` setting
 
