@@ -4,15 +4,13 @@ posted by [Jeremy Banks], July 2020
 you may [discuss this on dev.to]
 
   [Jeremy Banks]: mailto:_@jeremy.ca
-  [title-a]: / "Stop Ignoring Bash Errors"
-  [title-b]: / "Robust Bash: beyond -euo pipefail"
   [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-bash-errors-1omi
   [tags]: / "bash linux tutorial"
   [canonical]: https://banksh.jeremy.ca/ideas/stop-ignoring-bash-errors
 
   [ShellCheck]: https://github.com/koalaman/shellcheck
 
-There are few things more frustrating than starting a program, only for it to silently crash, without any error message to tell you what went wrong. One of those few things is for the program to accidentally ignore an error, telling you that everything's fine, but continuing in an invalid state and silently corrupting your data.
+[ED: rewrite this] There are few things more frustrating than starting a program, only for it to silently crash, without any error message to tell you what went wrong. One of those few things is for the program to accidentally ignore an error, telling you that everything's fine, but continuing in an invalid state and silently corrupting your data.
 
 Bash makes it easy to accidentally write scripts that do both. 😬
 
@@ -20,7 +18,7 @@ However, with a bit of care it is possible to write robust, reliable scripts tha
 
 ## What do we mean by errors?
 
-Bash doesn't have exceptions or error types as we might be used to in other langues. However, every command, whether it's built-in to Bash or an external program, returns an "exit status code" between `0` and `255` when it finishes executing. Successful commands return `0`, while commands that fail return a between code between `1` and `255`.
+Bash doesn't have exceptions or error types as we might be used to in other langues. However, every command, whether it's built-in to Bash or an external program, returns an "exit status code" between `0` and `255` when it finishes executing. Successful commands return `0`, while commands that fail return a code between `1` and `255`.
 
 When I talk about "errors" in Bash in this post, I'm referring to any command which exits with a non-zero exit code in a context where it isn't explicitly expected. For example, if you had a program that started with
 
@@ -38,7 +36,7 @@ else
 fi
 ```
 
-the command `test -e example.txt` may fail, but the `if` statement is expecting its condition to be a command that might fail, and it handle that case automatically. I do *not* consider that an "error" for the purpose of this post. The same reasoning applies to cases like `while COMMAND; do ...` and `COMMAND || return 0`; see [the Bash manual][A1] for the full list of exceptions.
+the command `test -e example.txt` may fail, but the `if` statement is expecting its condition to be a command that might fail, and it handles that case automatically. I do *not* consider that an "error" for the purpose of this post. The same reasoning applies to cases like `while COMMAND; do ...` and `COMMAND || return 0`; see [the Bash manual][A1] for the full list of exceptions.
 
 ## Simple errors
 
@@ -52,7 +50,7 @@ Here we enabling three options at once. Let's break them down.
 
 `set -e` (aka `-o errexit`) causes *most* failing commands to immediately return from the enclosing function, propagating their error exit status code to the calling function. If the calling function also doesn't handle the error, it will continue up the stack, eventually exiting the script with that exit status code. (Note that there are still some cases where errors can be silently ignored, discussed below.)
 
-`set -u` (aka `-o nounset`) makes it an error to refer to a variable like `$X` if it hasn't been defined, either in the script or as an environment variable, instead of treating it as an empty string. Often, this is a typo and a bug. There are certainly some cases where you'll need to handle reference possibly-undefined variables, but they should be indicated explicitly: you can use `${X-}` instead of `$X` to indicate where you'd like to use an empty string if a variable isn't defined.
+`set -u` (aka `-o nounset`) makes it an error to refer to a variable like `$X` if it hasn't been defined, either in the script or as an environment variable, instead of treating it as an empty string. Often, this is a typo and a bug. There are certainly some cases where you'll need to handle possibly-undefined variables, but they should be indicated explicitly: you can use `${X-}` instead of `$X` to indicate where you'd like to use an empty string if a variable isn't defined.
 
 `set -o pipefail` prevents errors from being silently ignored in pipelines (when the output of one command is being piped to the input of another). For example, consider:
 
