@@ -88,7 +88,7 @@ Even with ShellCheck, there are still some subtle cases where you can silence er
 
 ## Subshells
 
-A lot of things about Bash have surprised me, but this was the most shocking: almost anywhere you use parentheses, Bash *forks the entire process* to create a "subshell" child process running the parenthesized code!
+A lot of things about Bash have surprised me, but this was the most shocking: when you use parentheses to group commands, Bash *forks the entire process* to create a "subshell" child process running the parenthesized code!
 
 ```bash
 (false || true || echo this is a subshell) && ls
@@ -107,8 +107,7 @@ other_function() {
 This is why if you try to set a global variable from inside of parentheses, the change won't be visible outside: you're only setting the value in the child process.
 
 ```bash
-declare x
-x=first
+declare x=first
 (x=second)
 echo "$x"  # echoes "first"
 ```
