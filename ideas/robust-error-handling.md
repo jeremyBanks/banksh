@@ -118,14 +118,14 @@ This usually doesn't cause a problem for error handling&mdash;our settings are p
 
   [substitution]: #the-unfortunate-case-of-command-substitution
 
-Even with every available setting enabled, failures in command substitution subshells are silenced/masked and do not cause a failure in the original shell process. For example:
+Even with every available setting enabled, failures in command substitution subshells are usually silenced/masked and do not cause a failure in the original shell process. For example:
 
 ```bash
 set -euo pipefail
 shopt -s inherit_errexit
 
 echo "$(
-  echo &>2 "error: everything is broken"
+  echo >&2 "error: everything is broken"
   exit 66
 )"
 
@@ -137,7 +137,7 @@ error: everything is broken
 but this is still running
 ```
 
-As far as I can tell, there is no way to change this behaviour. **If there is some way I've missed, please let me know!** There are workarounds, but they're clunky.
+As far as I can tell, there is no way to change this behaviour, *and* ShellCheck can't warn about it. **If there is some way I've missed, please let me know!** There are workarounds, but they're clunky.
 
 The exit status of these subshells *is* returned to the parent shell, however, it's never checked before it is overwritten by the return status of the original command (`echo` in the case above). If we put the command substitution in an assignment expression on its own, instead of as an argument to another command, the exit status won't be overwritten. For example:
 
@@ -159,7 +159,7 @@ error: everything is broken
 
 This will behave properly, with the failure in `output="$(...)"` exiting the script.
 
-## Bonus suggestion
+## Bonus suggestions
 
 The default handling of glob expressions in Bash is confusing. Consider the command
 
@@ -181,14 +181,15 @@ ls: cannot access './builds/bin-*/': No such file or directory
 
 There are two more-reasonable alternative behaviours, and I strongly suggest you set one of them: `shopt -s nullglob` will replace the glob expression with the empty string if it doesn't match, and `shopt -s failglob` will raise an error.
 
+Finally, you should set `shopt -s compat"${BASH_COMPAT=42}"` with the minimum Bash version you want to support, to reduce the chance of breakage in later versions. For Linux I usually target `42` (February 2011) but macOS only ships with `32` (October 2006).
+
 ## Conclusion
 
-Writing robust Bash scripts is tricky, but not impossible. Start your scripts with `set -euo pipefail; shopt -s inherit_errexit nullglob` and use [ShellCheck], and you'll be 90% of the way there!
+Writing robust Bash scripts is tricky, but not impossible. Start your scripts with `set -euo pipefail; shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}` and use [ShellCheck], and you'll be 90% of the way there!
 
 ## Appendix 1: Bash manual description of the `-e`/`-o errexit` setting
 
-
-  [A1]: #appendix-1-bash-manual-description-of-raw-e-endraw-raw-o-errexit-endraw-setting
+  [A1]: #appendix-1-bash-manual-description-of-the-raw-e-endraw-raw-o-errexit-endraw-setting
 
 > Exit immediately if a pipeline (which may consist of a single simple command), a list, or a compound command (see SHELL GRAMMAR above), exits with a non-zero status. The shell does not exit if the command that fails is part of the command list immediately following a `while` or `until` keyword, part of the test following the `if` or `elif` reserved words, part of any command executed in a `&&` or `||` list except the command following the final `&&` or `||`, any command in a pipeline but the last, or if the command's return value is being inverted with `!`. If a compound command other than a subshell returns a non-zero status because a command failed while `-e` was being ignored, the shell does not exit. A trap on `ERR`, if set, is executed before the shell exits. This option applies to the shell environment and each subshell environment separately (see COMMAND EXECUTION ENVIRONMENT above), and may cause subshells to exit before executing all the commands in the subshell.
 >

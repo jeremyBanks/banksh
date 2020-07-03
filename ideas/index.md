@@ -1,6 +1,6 @@
 - [Robust error handling in Bash](/ideas/robust-error-handling), 2nd of July 2020
 
-## Drafts
+## Works In Progress
 
 - [Simple snapshot testing in Bash](/ideas/snapshot-testing)
 - [Setting global variables from Bash subshells](/ideas/set-global-variable-from-bash-subshell)

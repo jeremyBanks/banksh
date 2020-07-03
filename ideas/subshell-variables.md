@@ -15,6 +15,7 @@ When you use parentheses to group commands, Bash forks (copies) the entire to cr
 #!/bin/bash
 set -euo pipefail
 shopt -s inherit_errexit
+BASH_COMPAT=3.1
 
 declare x=first
 (
