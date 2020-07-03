@@ -2,10 +2,10 @@ Robust error handling in Bash
 =============================
 
 posted by [Jeremy Banks] on the 2<sup>nd</sup> of July 2020  
-you may [discuss this on dev.to]
+you may [discuss this on dev.to][dev.to]
 
   [Jeremy Banks]: mailto:_@jeremy.ca
-  [discuss this on dev.to]: https://dev.to/banks/stop-ignoring-errors-in-bash-3co5
+  [dev.to]: https://dev.to/banks/stop-ignoring-errors-in-bash-3co5
   [canonical]: https://banksh.jeremy.ca/ideas/robust-error-handling
   [tags]: # (#bash #linux #tutorial)
 

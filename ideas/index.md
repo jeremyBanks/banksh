@@ -1,5 +1,4 @@
-- [Robust error handling in Bash](/ideas/robust-error-handling)
-  on the 2<sup>nd</sup> of July 2020
+- [Robust error handling in Bash](/ideas/robust-error-handling), 2nd of July 2020
 
 ## Drafts
 
