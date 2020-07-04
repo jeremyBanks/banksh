@@ -2,43 +2,47 @@
 set -euo pipefail
 shopt -s inherit_errexit compat"${BASH_COMPAT=32}"
 
+# A unique random delimiter for channel messages.
+readonly channel_delimiter="$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$SECONDS-$RANDOM"
+
 # Creates and opens a fifo (named pipe), then unlinks it from the filesystem (so
 # that only our process has access to it), then prints its file descriptor.
-# We use this parent for child processes to communicate with their parents.
-declare to_parent
-declare to_parent_tmp_path
-to_parent_tmp_path="$(mktemp -u)"
-mkfifo "$to_parent_tmp_path"
-exec {to_parent}<>"$to_parent_tmp_path"
-rm "$to_parent_tmp_path"
+# We use this pipe for child processes to communicate with their parents.
+declare -i channel_timeout=1
+declare -i channel
+declare channel_tmp_path
+channel_tmp_path="$(mktemp -u)"
+mkfifo "$channel_tmp_path"
+exec {channel}<>"$channel_tmp_path"
+rm "$channel_tmp_path"
 
-function return-eval {
-  echo >&"$to_parent" "$@"
-  echo >&"$to_parent" EOF
+function chan-send {
+  echo >&"$channel" "$@"
+  echo >&"$channel" "$channel_delimiter"
   exit
+}
+
+function chan-recv {
+  declare line_from_child
+  while true; do
+    read -u "$channel" -r -t"$channel_timeout" line_from_child;
+    if [[ $line_from_child = "$channel_delimiter" ]]; then
+      break
+    fi
+    echo "$line_from_child"
+  done
 }
 
 set -x
 
-flock --exclusive "$to_parent"
 : "$(
   # objective 1: set state outside of this subshell from inside it.
-  return-eval '
+  chan-send '
     declare global_var=2
     echo "Im global! $global_var"
   '
 )"
-declare line_from_child
-declare lines_from_child=""
-while true; do
-  read -u "$to_parent" -r -t1 line_from_child;
-  if [[ $line_from_child = EOF ]]; then
-    break
-  fi
-  lines_from_child+="$line_from_child"$'\n'
-done
-flock --unlock "$to_parent"
-eval "$lines_from_child"
+eval "$(chan-recv)"
 
 
 
