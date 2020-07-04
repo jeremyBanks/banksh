@@ -17,12 +17,11 @@ set -euo pipefail
 shopt -s inherit_errexit
 BASH_COMPAT=3.1
 
-declare x=first
+declare x="first"
 (
-  # in a subshell:
   echo "$x" # "first"
   x=second
   echo "$x" # "second"
 )
-echo "$x" # "first"
+echo "$x" # "first" again
 ```
