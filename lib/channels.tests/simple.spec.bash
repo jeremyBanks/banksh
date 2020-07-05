@@ -20,12 +20,12 @@ test "$message" = "hello world 1"
 )
 message="$(sanity_check.recv)"
 test "$message" = "hello world 3"
-(! sanity_check.try-recv)
-(! sanity_check.try-recv)
+(! sanity_check.try-recv 2>/dev/null)
+(! sanity_check.try-recv 2>/dev/null)
 (sanity_check.send "hello world 4")
 message="$(sanity_check.recv)"
 test "$message" = "hello world 4"
-(! sanity_check.try-recv)
+(! sanity_check.try-recv 2>/dev/null)
 
 : "$sanity_check"
 
@@ -34,5 +34,5 @@ sanity_check.drop
 
 (! (: "$sanity_check" ))
 (! sanity_check.send)
-(! sanity_check.try-recv)
+(! sanity_check.try-recv 2>/dev/null)
 (! sanity_check.drop)

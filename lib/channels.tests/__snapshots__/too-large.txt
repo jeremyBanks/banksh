@@ -1,6 +1,5 @@
 stderr:
 ERROR: message length (16387) exceeds maximum (16384)
-ERROR: read from &10 failed after 0.100s
 
 stdout:
 
