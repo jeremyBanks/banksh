@@ -1,5 +1,5 @@
-Go-inspired channels for intersubshell communication in Bash
-============================================================
+Go-inspired "channels" for intersubshell communication in Bash
+==============================================================
 
 posted by [Jeremy Banks] in the future  
 you may [discuss this on dev.to][dev.to]
@@ -26,4 +26,7 @@ declare x="first"
 echo "$x" # "first" again
 ```
 
-read -u3 -t0 
+If you're just using a subshell directly, like above, you could do this:
+
+but with command substitution you can't do that, unless you also want to
+

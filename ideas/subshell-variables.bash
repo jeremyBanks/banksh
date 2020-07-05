@@ -2,16 +2,19 @@
 set -euo pipefail
 shopt -s inherit_errexit compat"${BASH_COMPAT=42}"
 
-### Channels in Bash
+# The timeout (in seconds) after which we raise an error when attempting to
+# send, recieve, or lock a channel. Must be at least 1ms or undefined behaviour.
+declare -r channel_timeout=0.100
 
 # A unique random delimiter for channel messages.
-readonly channel_delimiter="$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$SECONDS-$RANDOM"
-
-declare -i channel_timeout=1
+declare -r channel_delimiter="$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$RANDOM"
 
 # Creates and opens a fifo (named pipe), then unlinks it from the filesystem (so
 # that only our process has access to it), storing the file descriptor in the
 # named global variable.
+#
+# Also defines four functions, $name.{send,recv}{,-unsafe}, imitating bound 
+# methods wrapping our channel-{send,recv} functions defined below.
 function declare-channel {
   declare name="$1"
 
@@ -28,9 +31,9 @@ function declare-channel {
 
   declare -gri "${name_fd}=${fd}"
 
-  # "Uash nsafe" here refer to a lack of concurrency guarauntees -- if multiple
+  # "Unsafe" here refers to a lack of concurrency guarauntees -- if multiple
   # processes are both reading or both writing at the same time, the results
-  # are undefined. 
+  # are undefined. Messages may be corrupted or lost. 
   eval "function ${name_send}-unsafe {
     channel-send \$$name_fd \"\$@\"
   }"
@@ -51,22 +54,22 @@ function declare-channel {
   }"
 }
 
-### Example Use: Setting global variables from a subshell
-declare-channel to_parent
-
+# Writes a message to 
 function channel-send {
   declare -i channel_fd="$1"
 
   echo >&"$channel_fd" "${@:2}"
   echo >&"$channel_fd" "$channel_delimiter"
-  exit
 }
 
 function channel-recv {
   declare -i channel_fd="$1"
   declare line
   while true; do
-    read -u "$channel_fd" -r -t"$channel_timeout" line;
+    if ! read -u "$channel_fd" -r -t "$channel_timeout" line; then
+      echo >&2 "ERROR: read from &$channel_fd with timeout ${channel_timeout}s failed"
+      exit 1
+    fi
     if [[ $line = "$channel_delimiter" ]]; then
       break
     fi
@@ -74,28 +77,39 @@ function channel-recv {
   done
 }
 
-declare duration=10
-declare -i safe_count=-1
-for ((SECONDS=0; SECONDS < 4; safe_count+=1)); do
-  : "$(
-    to_parent.send '
-      declare global_var=2
-    '
-  )"
-  eval "$(to_parent.recv)"
-done
+
+### Example Use: Setting global variables from a subshell
+declare-channel to_parent
+
+### also it is Benchmarking
+
+declare -ri duration=16
+
 declare -i unsafe_count=-1
-for ((SECONDS=0; SECONDS < 4; unsafe_count+=1)); do
+SECONDS=0
+while ((SECONDS < duration)); do
   : "$(
     to_parent.send-unsafe '
-      declare global_var=2
+      unsafe_count+=1
     '
   )"
   eval "$(to_parent.recv-unsafe)"
 done
 
-echo "$((safe_count / duration)) safe send+recvs per second"
-echo "$((unsafe_count / duration)) unsafe send+recvs per second"
+echo "$((unsafe_count / duration)) unsafe send+recvs per second ($unsafe_count / $SECONDS)"
+
+declare -i safe_count=-1
+SECONDS=0
+while ((SECONDS < duration)); do
+  : "$(
+    to_parent.send '
+      safe_count+=1
+    '
+  )"
+  eval "$(to_parent.recv)"
+done
+
+echo "$((safe_count / duration)) safe send+recvs per second ($safe_count / $SECONDS)"
 
 
 
