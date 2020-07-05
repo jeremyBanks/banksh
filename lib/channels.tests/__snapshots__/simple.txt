@@ -1,4 +1,11 @@
 stderr:
+ERROR: read from &10 failed after 0.100s
+ERROR: read from &10 failed after 0.100s
+ERROR: read from &10 failed after 0.100s
+simple.spec.bash: line 32: sanity_check: unbound variable
+simple.spec.bash: line 33: sanity_check.send: command not found
+simple.spec.bash: line 34: sanity_check.recv: command not found
+simple.spec.bash: line 35: sanity_check.drop: command not found
 
 stdout:
 
