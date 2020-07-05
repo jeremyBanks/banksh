@@ -1,48 +1,67 @@
 #!/bin/bash
 set -euo pipefail
-shopt -s inherit_errexit compat"${BASH_COMPAT=32}"
+shopt -s inherit_errexit compat"${BASH_COMPAT=42}"
+
+### Channels in Bash
 
 # A unique random delimiter for channel messages.
 readonly channel_delimiter="$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$SECONDS-$RANDOM"
 
-# Creates and opens a fifo (named pipe), then unlinks it from the filesystem (so
-# that only our process has access to it), then prints its file descriptor.
-# We use this pipe for child processes to communicate with their parents.
 declare -i channel_timeout=1
-declare -i channel
-declare channel_tmp_path
-channel_tmp_path="$(mktemp -u)"
-mkfifo "$channel_tmp_path"
-exec {channel}<>"$channel_tmp_path"
-rm "$channel_tmp_path"
 
-function chan-send {
-  echo >&"$channel" "$@"
-  echo >&"$channel" "$channel_delimiter"
+# Creates and opens a fifo (named pipe), then unlinks it from the filesystem (so
+# that only our process has access to it), storing the file descriptor in the
+# named global variable.
+function declare-channel {
+  declare name="$1"
+
+  declare name_fd="${name}"
+  declare name_send="${name}.send"
+  declare name_recv="${name}.recv"
+
+  declare tmp_path
+  declare fd
+  tmp_path="$(mktemp -u)"
+  mkfifo "$tmp_path"
+  exec {fd}<>"$tmp_path"
+  rm "$tmp_path"
+
+  declare -gri "${name_fd}=${fd}"
+
+  eval "function $name_send { channel-send \$$name_fd \"\$@\"; }"
+  eval "function $name_recv { channel-recv \$$name_fd \"\$@\"; }"
+}
+
+### Example Use: Subshell Communication With Parent
+declare-channel to_parent
+
+function channel-send {
+  declare -i channel_fd="$1"
+
+  echo >&"$channel_fd" "${@:2}"
+  echo >&"$channel_fd" "$channel_delimiter"
   exit
 }
 
-function chan-recv {
-  declare line_from_child
+function channel-recv {
+  declare -i channel_fd="$1"
+  declare line
   while true; do
-    read -u "$channel" -r -t"$channel_timeout" line_from_child;
-    if [[ $line_from_child = "$channel_delimiter" ]]; then
+    read -u "$channel_fd" -r -t"$channel_timeout" line;
+    if [[ $line = "$channel_delimiter" ]]; then
       break
     fi
-    echo "$line_from_child"
+    echo "$line"
   done
 }
 
-set -x
-
 : "$(
-  # objective 1: set state outside of this subshell from inside it.
-  chan-send '
+  to_parent.send '
     declare global_var=2
     echo "Im global! $global_var"
   '
 )"
-eval "$(chan-recv)"
+eval "$(to_parent.recv)"
 
 
 

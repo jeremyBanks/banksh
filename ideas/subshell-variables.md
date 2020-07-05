@@ -25,3 +25,5 @@ declare x="first"
 )
 echo "$x" # "first" again
 ```
+
+read -u3 -t0 
