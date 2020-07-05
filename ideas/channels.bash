@@ -2,18 +2,12 @@
 set -euo pipefail
 shopt -s inherit_errexit compat"${BASH_COMPAT=42}"
 
-# The maximum size in bytes for which a write to a pipe is guaraunteed to be 
-# atomic by the operating system. (Reads are ~never guaraunteed to be atomic.)
-# but this is mostly useless because Bash string lengths depend on the damn locale!
-declare -i PIPE_BUF
-PIPE_BUF="$(getconf PIPE_BUF /)"
-
 # The timeout (in seconds) after which we raise an error when attempting to
-# send, recieve, or lock a channel. Must be at least 1ms or undefined behaviour.
-declare channel_timeout=0.100
+# send, recieve, or lock a channel. Must be at least 1ms to be valid.
+declare channel_timeout=0.100 && [[ $(bc <<< "$channel_timeout >= 0.001") = 1 ]]
 
-# A unique random delimiter for channel messages.
-declare channel_delimiter="$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$RANDOM"
+# A pseudorandom delimiter for channel messages.
+declare channel_delimiter="#$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$RANDOM-$RANDOM#"
 
 # Creates and opens a fifo (named pipe), then unlinks it from the filesystem (so
 # that only our process has access to it), storing the file descriptor in the
@@ -37,6 +31,9 @@ function declare-channel {
   # processes are both reading or both writing at the same time, the results
   # are undefined. Messages may be corrupted or lost. 
   eval "function ${name}.send-unsafe {
+    # This should actually be safe as long as the message is fewer than 
+    # $(ulimit -p) * 512 bytes, but measuring string byte length robustly
+    # in Bash is a bit annoying due to locales, so I don't.
     channel-send \$${name} \"\$@\"
   }"
   eval "function ${name}.recv-unsafe {
@@ -85,11 +82,23 @@ echo "Sanity testing..."
 
 declare-channel sanity_check
 (
-  sanity_check.send "hello world"
+  sanity_check.send "hello world 1"
+  sanity_check.send "hello world 2"
+  sanity_check.send "hello world 3"
 )
 declare message
 message="$(sanity_check.recv)"
-test "$message" = "hello world"
+test "$message" = "hello world 1"
+message="$(sanity_check.recv)"
+test "$message" = "hello world 2"
+message="$(sanity_check.recv)"
+test "$message" = "hello world 3"
+(! sanity_check.recv) 2>/dev/null
+(! sanity_check.recv) 2>/dev/null
+(sanity_check.send "hello world 4")
+message="$(sanity_check.recv)"
+test "$message" = "hello world 4"
+(! sanity_check.recv) 2>/dev/null
 
 ### Example Use: Setting global variables from a subshell
 declare-channel to_parent
@@ -121,46 +130,3 @@ while ((SECONDS < duration)); do
 done
 
 echo "$((safe_count / duration)) safe send+recvs per second ($safe_count / $SECONDS)"
-
-exit 0
-
-
-# Should we use a signal to trigger this immediately?
-# SIGCONT seems appropriate.
-# but interrupts are probably unneccessary
-
-declare -a an_array=(1 2 3)
-declare -A a_dict=([a]=1 [b]=2 [c]=3)
-
-  : "[subshell $BASH_SUBSHELL]
-    an_array = ${an_array[*]}
-    a_dict keys = ${!a_dict[*]}
-    a_dict values = ${a_dict[*]}
-  "
-
-(
-  : "[subshell $BASH_SUBSHELL]
-    an_array = ${an_array[*]}
-    a_dict keys = ${!a_dict[*]}
-    a_dict values = ${a_dict[*]}
-  "
-
-  an_array+=(4 5 6)
-  a_dict+=([d]=4 [e]=5)
-
-  : "[subshell $BASH_SUBSHELL]
-    an_array = ${an_array[*]}
-    a_dict keys = ${!a_dict[*]}
-    a_dict values = ${a_dict[*]}
-  "
-
-  echo 'an_array=(IM IN UR ARRAY)' >&${fifo}
-  echo '#' >&${fifo}
-) &
-eval "$(sed '/^#$/q' - <&${fifo})"
-
-  : "[subshell $BASH_SUBSHELL]
-    an_array = ${an_array[*]}
-    a_dict keys = ${!a_dict[*]}
-    a_dict values = ${a_dict[*]}
-  "
