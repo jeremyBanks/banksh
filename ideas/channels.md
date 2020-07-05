@@ -42,3 +42,6 @@ a fifo but it smooths off the edges.
 If you're just using a subshell directly, like above, you could do this:
 
 but with command substitution you can't do that, unless you also want to
+
+If the buffer gets full it'll block.
+In my experience on Linux it's like a megabyte.

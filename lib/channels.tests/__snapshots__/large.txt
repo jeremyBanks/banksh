@@ -1,0 +1,11 @@
+stderr:
+
+stdout:
+sending 128 messages of size 16384
+recieving from the same process after every message
+done
+
+sending 128 messages of size 16384
+constantly recieving from a subshell
+done
+status: 0
