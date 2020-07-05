@@ -88,8 +88,6 @@ declare message
 message="$(sanity_check.recv)"
 test "$message" = "hello world"
 
-echo "Sane!"
-
 ### Example Use: Setting global variables from a subshell
 declare-channel to_parent
 
@@ -104,11 +102,7 @@ declare message
 declare -i unsafe_count=-1
 SECONDS=0
 while ((SECONDS < duration)); do
-  (
-    to_parent.send-unsafe '
-      unsafe_count+=1
-    '
-  )
+  : "$(to_parent.send-unsafe unsafe_count+=1)"
   message="$(to_parent.recv-unsafe)"
   eval "$message"
 done
@@ -118,18 +112,12 @@ echo "$((unsafe_count / duration)) unsafe send+recvs per second ($unsafe_count /
 declare -i safe_count=-1
 SECONDS=0
 while ((SECONDS < duration)); do
-  (
-    to_parent.send '
-      safe_count+=1
-    '
-  )
+  : "$(to_parent.send safe_count+=1)"
   message="$(to_parent.recv)"
   eval "$message"
 done
 
 echo "$((safe_count / duration)) safe send+recvs per second ($safe_count / $SECONDS)"
-
-echo "Benched!"
 
 exit 0
 
