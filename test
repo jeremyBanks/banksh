@@ -20,13 +20,13 @@ declare actual
 declare expected
 declare -i passes=0
 declare -i failures=0
-for suite in "$PWD"/**/__tests__; do
+for suite in "$PWD"/**/{__tests__,*.{test,spec}{,s}}/; do
   cd "$suite"
   rm -rf __snapshots_actual__
   mkdir -p __snapshots_actual__ __snapshots__
 
   for test in *.spec.bash; do
-    echo "$(tput smul || :)$suite/$test$(tput rmul || :)"
+    echo "$(tput smul || :)${suite}${test}$(tput rmul || :)"
     actual="__snapshots_actual__/${test%.spec.bash}.txt"
     expected="__snapshots__/${test%.spec.bash}.txt"
     

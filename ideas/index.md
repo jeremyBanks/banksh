@@ -2,6 +2,6 @@
 
 ## Works In Progress
 
-- [Simple snapshot testing in Bash](/ideas/snapshot-testing)
 - [Channels](/ideas/channels)
+- [Simple snapshot testing in Bash](/ideas/snapshot-testing)
 - [Exception-style error handling in Bash](/ideas/exceptions)

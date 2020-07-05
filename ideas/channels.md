@@ -42,4 +42,3 @@ a fifo but it smooths off the edges.
 If you're just using a subshell directly, like above, you could do this:
 
 but with command substitution you can't do that, unless you also want to
-

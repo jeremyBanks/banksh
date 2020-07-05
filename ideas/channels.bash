@@ -25,7 +25,7 @@ function declare-channel {
   exec {fd}<>"$tmp_path"
   rm "$tmp_path"
 
-  declare -gri "${name}=${fd}"
+  declare -gi "${name}=${fd}"
 
   # "Unsafe" here refers to a lack of concurrency guarauntees -- if multiple
   # processes are both reading or both writing at the same time, the results
@@ -39,9 +39,11 @@ function declare-channel {
   eval "function ${name}.recv-unsafe {
     channel-recv \$${name} \"\$@\"
   }"
+
   # We can use filesystem locking to prevent that. This can reduce performance
-  # by 80% (from 2ms to 10ms), which is horribly slow compared with other 
-  # programming languages, but more than adequate for my Bash needs.
+  # significantly (from 2ms to 10ms on my i7-7700HQ without contention). Either 
+  # way, it's extremely slow compared with other programming languages, but more
+  # than adequate for my Bash needs.
   eval "function ${name}.send {
     flock --exclusive --timeout \$channel_timeout \$$name
     ${name}.send-unsafe \"\$@\"
@@ -51,6 +53,13 @@ function declare-channel {
     flock --exclusive --timeout \$channel_timeout \$$name
     ${name}.recv-unsafe \"\$@\"
     flock --unlock \$$name
+  }"
+
+  # Closes the file descriptor and unsets its variable and functions.
+  eval "function ${name}.drop {
+    eval \"exec \$${name}>&-\"
+    unset ${name}
+    unset -f ${name}{,.{{send,recv}{,-unsafe},drop}}
   }"
 }
 
@@ -77,56 +86,3 @@ function channel-recv {
     fi
   done
 }
-
-echo "Sanity testing..."
-
-declare-channel sanity_check
-(
-  sanity_check.send "hello world 1"
-  sanity_check.send "hello world 2"
-  sanity_check.send "hello world 3"
-)
-declare message
-message="$(sanity_check.recv)"
-test "$message" = "hello world 1"
-message="$(sanity_check.recv)"
-test "$message" = "hello world 2"
-message="$(sanity_check.recv)"
-test "$message" = "hello world 3"
-(! sanity_check.recv) 2>/dev/null
-(! sanity_check.recv) 2>/dev/null
-(sanity_check.send "hello world 4")
-message="$(sanity_check.recv)"
-test "$message" = "hello world 4"
-(! sanity_check.recv) 2>/dev/null
-
-### Example Use: Setting global variables from a subshell
-declare-channel to_parent
-
-### also it is Benchmarking
-
-echo "Benchmarking..."
-
-declare -ri duration=16
-
-declare message
-
-declare -i unsafe_count=-1
-SECONDS=0
-while ((SECONDS < duration)); do
-  : "$(to_parent.send-unsafe unsafe_count+=1)"
-  message="$(to_parent.recv-unsafe)"
-  eval "$message"
-done
-
-echo "$((unsafe_count / duration)) unsafe send+recvs per second ($unsafe_count / $SECONDS)"
-
-declare -i safe_count=-1
-SECONDS=0
-while ((SECONDS < duration)); do
-  : "$(to_parent.send safe_count+=1)"
-  message="$(to_parent.recv)"
-  eval "$message"
-done
-
-echo "$((safe_count / duration)) safe send+recvs per second ($safe_count / $SECONDS)"
