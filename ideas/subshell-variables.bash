@@ -28,7 +28,7 @@ function declare-channel {
 
   declare -gri "${name_fd}=${fd}"
 
-  # "Unsafe" here refer to a lack of concurrency guarauntees -- if multiple
+  # "Uash nsafe" here refer to a lack of concurrency guarauntees -- if multiple
   # processes are both reading or both writing at the same time, the results
   # are undefined. 
   eval "function ${name_send}-unsafe {
@@ -74,13 +74,28 @@ function channel-recv {
   done
 }
 
-: "$(
-  to_parent.send '
-    declare global_var=2
-    echo "Im global! $global_var"
-  '
-)"
-eval "$(to_parent.recv)"
+declare duration=10
+declare -i safe_count=-1
+for ((SECONDS=0; SECONDS < 4; safe_count+=1)); do
+  : "$(
+    to_parent.send '
+      declare global_var=2
+    '
+  )"
+  eval "$(to_parent.recv)"
+done
+declare -i unsafe_count=-1
+for ((SECONDS=0; SECONDS < 4; unsafe_count+=1)); do
+  : "$(
+    to_parent.send-unsafe '
+      declare global_var=2
+    '
+  )"
+  eval "$(to_parent.recv-unsafe)"
+done
+
+echo "$((safe_count / duration)) safe send+recvs per second"
+echo "$((unsafe_count / duration)) unsafe send+recvs per second"
 
 
 
