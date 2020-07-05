@@ -4,10 +4,10 @@ shopt -s inherit_errexit compat"${BASH_COMPAT=42}"
 
 # The timeout (in seconds) after which we raise an error when attempting to
 # send, recieve, or lock a channel. Must be at least 1ms or undefined behaviour.
-declare -r channel_timeout=0.100
+declare channel_timeout=0.100
 
 # A unique random delimiter for channel messages.
-declare -r channel_delimiter="$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$RANDOM"
+declare channel_delimiter="$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$RANDOM"
 
 # Creates and opens a fifo (named pipe), then unlinks it from the filesystem (so
 # that only our process has access to it), storing the file descriptor in the
@@ -23,9 +23,9 @@ function declare-channel {
   declare name_recv="${name}.recv"
 
   declare tmp_path
-  declare fd
   tmp_path="$(mktemp -u)"
   mkfifo "$tmp_path"
+  declare fd
   exec {fd}<>"$tmp_path"
   rm "$tmp_path"
 
@@ -54,14 +54,15 @@ function declare-channel {
   }"
 }
 
-# Writes a message to 
+# Sends a message into a channel, by writing it to the specified file descriptor
+# followed by the channel message delimiter.
 function channel-send {
   declare -i channel_fd="$1"
-
   echo >&"$channel_fd" "${@:2}"
   echo >&"$channel_fd" "$channel_delimiter"
 }
 
+# Reads the next message from a channel, raises an error if none is available.
 function channel-recv {
   declare -i channel_fd="$1"
   declare line
@@ -77,23 +78,39 @@ function channel-recv {
   done
 }
 
+echo "Sanity testing..."
+
+declare-channel sanity_check
+(
+  sanity_check.send "hello world"
+)
+declare message
+message="$(sanity_check.recv)"
+test "$message" = "hello world"
+
+echo "Sane!"
 
 ### Example Use: Setting global variables from a subshell
 declare-channel to_parent
 
 ### also it is Benchmarking
 
+echo "Benchmarking..."
+
 declare -ri duration=16
+
+declare message
 
 declare -i unsafe_count=-1
 SECONDS=0
 while ((SECONDS < duration)); do
-  : "$(
+  (
     to_parent.send-unsafe '
       unsafe_count+=1
     '
-  )"
-  eval "$(to_parent.recv-unsafe)"
+  )
+  message="$(to_parent.recv-unsafe)"
+  eval "$message"
 done
 
 echo "$((unsafe_count / duration)) unsafe send+recvs per second ($unsafe_count / $SECONDS)"
@@ -101,17 +118,18 @@ echo "$((unsafe_count / duration)) unsafe send+recvs per second ($unsafe_count /
 declare -i safe_count=-1
 SECONDS=0
 while ((SECONDS < duration)); do
-  : "$(
+  (
     to_parent.send '
       safe_count+=1
     '
-  )"
-  eval "$(to_parent.recv)"
+  )
+  message="$(to_parent.recv)"
+  eval "$message"
 done
 
 echo "$((safe_count / duration)) safe send+recvs per second ($safe_count / $SECONDS)"
 
-
+echo "Benched!"
 
 exit 0
 

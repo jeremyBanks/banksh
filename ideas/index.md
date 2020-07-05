@@ -3,5 +3,5 @@
 ## Works In Progress
 
 - [Simple snapshot testing in Bash](/ideas/snapshot-testing)
-- [Setting global variables from Bash subshells](/ideas/set-global-variable-from-bash-subshell)
+- [Channels](/ideas/channels)
 - [Exception-style error handling in Bash](/ideas/exceptions)
