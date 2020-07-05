@@ -2,6 +2,12 @@
 set -euo pipefail
 shopt -s inherit_errexit compat"${BASH_COMPAT=42}"
 
+# The maximum size in bytes for which a write to a pipe is guaraunteed to be 
+# atomic by the operating system. (Reads are ~never guaraunteed to be atomic.)
+# but this is mostly useless because Bash string lengths depend on the damn locale!
+declare -i PIPE_BUF
+PIPE_BUF="$(getconf PIPE_BUF /)"
+
 # The timeout (in seconds) after which we raise an error when attempting to
 # send, recieve, or lock a channel. Must be at least 1ms or undefined behaviour.
 declare channel_timeout=0.100
@@ -18,10 +24,6 @@ declare channel_delimiter="$$-$BASHPID-$SHLVL-$BASH_SUBSHELL-$RANDOM"
 function declare-channel {
   declare name="$1"
 
-  declare name_fd="${name}"
-  declare name_send="${name}.send"
-  declare name_recv="${name}.recv"
-
   declare tmp_path
   tmp_path="$(mktemp -u)"
   mkfifo "$tmp_path"
@@ -29,28 +31,29 @@ function declare-channel {
   exec {fd}<>"$tmp_path"
   rm "$tmp_path"
 
-  declare -gri "${name_fd}=${fd}"
+  declare -gri "${name}=${fd}"
 
   # "Unsafe" here refers to a lack of concurrency guarauntees -- if multiple
   # processes are both reading or both writing at the same time, the results
   # are undefined. Messages may be corrupted or lost. 
-  eval "function ${name_send}-unsafe {
-    channel-send \$$name_fd \"\$@\"
+  eval "function ${name}.send-unsafe {
+    channel-send \$${name} \"\$@\"
   }"
-  eval "function ${name_recv}-unsafe {
-    channel-recv \$$name_fd \"\$@\"
+  eval "function ${name}.recv-unsafe {
+    channel-recv \$${name} \"\$@\"
   }"
-
-  # We can use filesystem locking to prevent that. Don't deadlock yourself.
-  eval "function ${name_send} {
-    flock --exclusive --timeout \$channel_timeout \$$name_fd
-    ${name_send}-unsafe \"\$@\"
-    flock --unlock \$$name_fd
+  # We can use filesystem locking to prevent that. This can reduce performance
+  # by 80% (from 2ms to 10ms), which is horribly slow compared with other 
+  # programming languages, but more than adequate for my Bash needs.
+  eval "function ${name}.send {
+    flock --exclusive --timeout \$channel_timeout \$$name
+    ${name}.send-unsafe \"\$@\"
+    flock --unlock \$$name
   }"
-  eval "function ${name_recv} {
-    flock --exclusive --timeout \$channel_timeout \$$name_fd
-    ${name_recv}-unsafe \"\$@\"
-    flock --unlock \$$name_fd
+  eval "function ${name}.recv {
+    flock --exclusive --timeout \$channel_timeout \$$name
+    ${name}.recv-unsafe \"\$@\"
+    flock --unlock \$$name
   }"
 }
 
@@ -62,19 +65,19 @@ function channel-send {
   echo >&"$channel_fd" "$channel_delimiter"
 }
 
-# Reads the next message from a channel, raises an error if none is available.
+# Reads the next message from a channel, raising an error if none is available.
 function channel-recv {
   declare -i channel_fd="$1"
   declare line
   while true; do
     if ! read -u "$channel_fd" -r -t "$channel_timeout" line; then
-      echo >&2 "ERROR: read from &$channel_fd with timeout ${channel_timeout}s failed"
-      exit 1
+      echo >&2 "ERROR: read from &$channel_fd failed after ${channel_timeout}s"
+      return 1
+    elif [[ $line = "$channel_delimiter" ]]; then
+      return 0
+    else
+      echo "$line"
     fi
-    if [[ $line = "$channel_delimiter" ]]; then
-      break
-    fi
-    echo "$line"
   done
 }
 
@@ -120,14 +123,6 @@ done
 echo "$((safe_count / duration)) safe send+recvs per second ($safe_count / $SECONDS)"
 
 exit 0
-
-
-
-
-# The maximum size for which a write to a pipe is guaraunteed to be atomic.
-# (Reads are not guaraunteed to be atomic.)
-declare PIPE_BUF
-PIPE_BUF="$(getconf PIPE_BUF /)"
 
 
 # Should we use a signal to trigger this immediately?
