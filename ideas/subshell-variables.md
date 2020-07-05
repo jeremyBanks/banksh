@@ -1,5 +1,5 @@
-Setting global variables from Bash subshells
-============================================
+Go-inspired channels for intersubshell communication in Bash
+============================================================
 
 posted by [Jeremy Banks] in the future  
 you may [discuss this on dev.to][dev.to]

@@ -28,11 +28,30 @@ function declare-channel {
 
   declare -gri "${name_fd}=${fd}"
 
-  eval "function $name_send { channel-send \$$name_fd \"\$@\"; }"
-  eval "function $name_recv { channel-recv \$$name_fd \"\$@\"; }"
+  # "Unsafe" here refer to a lack of concurrency guarauntees -- if multiple
+  # processes are both reading or both writing at the same time, the results
+  # are undefined. 
+  eval "function ${name_send}-unsafe {
+    channel-send \$$name_fd \"\$@\"
+  }"
+  eval "function ${name_recv}-unsafe {
+    channel-recv \$$name_fd \"\$@\"
+  }"
+
+  # We can use filesystem locking to prevent that. Don't deadlock yourself.
+  eval "function ${name_send} {
+    flock --exclusive --timeout \$channel_timeout \$$name_fd
+    ${name_send}-unsafe \"\$@\"
+    flock --unlock \$$name_fd
+  }"
+  eval "function ${name_recv} {
+    flock --exclusive --timeout \$channel_timeout \$$name_fd
+    ${name_recv}-unsafe \"\$@\"
+    flock --unlock \$$name_fd
+  }"
 }
 
-### Example Use: Subshell Communication With Parent
+### Example Use: Setting global variables from a subshell
 declare-channel to_parent
 
 function channel-send {
