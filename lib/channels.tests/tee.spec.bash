@@ -45,7 +45,7 @@ input.send 4
 [[ $(output_a.try-recv) = 4 ]]
 [[ $(output_b.try-recv) = 4 ]]
 
-kill "$tee_pid"
+kill "$tee_pid" 
 
 input.send 5
 
