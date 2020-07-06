@@ -1,5 +1,7 @@
 stderr:
 
 stdout:
-done
+parent done
+
+subshell done
 status: 0

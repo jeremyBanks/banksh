@@ -3,6 +3,7 @@
 source "$(dirname "${BASH_SOURCE[0]}")/../../.banksh/lib/channels"
 
 echo "testing that two child shells can exchange messages with each other"
+echo "in this case using the same channel, even though that's a bad idea"
 
 declare -i channel && declare-channel channel
 
@@ -13,7 +14,6 @@ declare -i channel && declare-channel channel
   [[ $(channel.recv) = C ]]
   [[ $(channel.recv) = D ]]
   channel.send "E"
-  sleep 1
   echo "subshell 1 done"
 ) &
 
