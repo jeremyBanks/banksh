@@ -29,19 +29,18 @@ declare-channel response
 ) &
 
 function ipc {
-  set -x
   flock --exclusive $lock
   request.send "$@"
   if [[ ${1} != exit ]]; then
     response.recv
   fi
   flock --unlock $lock
-  set +x
 }
 
 declare pids=""
 
 (
+  sleep 1
   [[ $(ipc double-integer 16) = 32 ]]
   [[ $(ipc double-integer 32) = 64 ]]
   [[ $(ipc double-integer 3) = 6 ]]
@@ -51,6 +50,7 @@ declare pids=""
 pids+=" $!"
 
 (
+  sleep 1
   [[ $(ipc double-integer 1) = 2 ]]
   [[ $(ipc double-integer 16) = 32 ]]
   [[ $(ipc double-integer 3) = 6 ]]
@@ -60,6 +60,7 @@ pids+=" $!"
 pids+=" $!"
 
 (
+  sleep 1
   [[ $(ipc double-integer 3) = 6 ]]
   [[ $(ipc double-integer 32) = 64 ]]
   [[ $(ipc increment-integer 9) = 10 ]]
@@ -75,3 +76,7 @@ echo "subshells done"
 ipc exit
 
 echo "parent done"
+
+
+# does the flock apply to the entire descriptor, not the process?
+# hmmmm... does locking a file descriptor... lock the file descriptor universally, which might be shared across processes, not locking it to a specific process? maybe.... if so that's pretty, uh, inconvenient.
