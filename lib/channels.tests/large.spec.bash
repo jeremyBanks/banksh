@@ -6,7 +6,7 @@ declare -i channel && declare-channel channel
 
 declare safe_message
 safe_message="x$(printf "%-$((channel_max_message_length - 2))s" "")x"
-declare -ri count=128
+declare -ri count=32
 
 echo "sending $count messages of size $channel_max_message_length"
 echo "recieving from the same process after every message"

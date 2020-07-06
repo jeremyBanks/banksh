@@ -1,0 +1,5 @@
+stderr:
+
+stdout:
+done
+status: 0
