@@ -25,7 +25,7 @@ declare-channel output_b
     output_a.send "$message"
     output_b.send "$message"
   done
-) &
+)2>/dev/null &
 
 declare tee_pid="$!"
 
