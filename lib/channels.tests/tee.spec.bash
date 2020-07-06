@@ -45,12 +45,4 @@ input.send 4
 [[ $(output_a.try-recv) = 4 ]]
 [[ $(output_b.try-recv) = 4 ]]
 
-kill "$tee_pid"
-wait
-
-input.send 5
-
-(! output_a.try-recv 2>/dev/null)
-(! output_b.try-recv 2>/dev/null)
-
 echo "done"
