@@ -25,7 +25,7 @@ declare-channel output_b
     output_a.send "$message"
     output_b.send "$message"
   done
-)2>/dev/null &
+) &
 
 declare tee_pid="$!"
 
@@ -45,7 +45,8 @@ input.send 4
 [[ $(output_a.try-recv) = 4 ]]
 [[ $(output_b.try-recv) = 4 ]]
 
-kill "$tee_pid" 
+kill "$tee_pid"
+wait
 
 input.send 5
 
