@@ -1,0 +1,8 @@
+stderr:
+
+stdout:
+testing that two child shells can exchange messages with each other
+subshell 2 done
+subshell 1 done
+parent done
+status: 0
