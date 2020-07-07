@@ -1,5 +1,5 @@
 ---
-title: bash ideas index
+title: banksh bash ideas index
 ---
 
 ## Index
