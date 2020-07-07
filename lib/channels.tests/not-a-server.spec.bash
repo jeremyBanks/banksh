@@ -76,7 +76,3 @@ echo "subshells done"
 ipc exit
 
 echo "parent done"
-
-
-# does the flock apply to the entire descriptor, not the process?
-# hmmmm... does locking a file descriptor... lock the file descriptor universally, which might be shared across processes, not locking it to a specific process? maybe.... if so that's pretty, uh, inconvenient.
