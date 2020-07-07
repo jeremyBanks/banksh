@@ -1,3 +1,7 @@
+---
+title: bash ideas index
+---
+
 ## Index
 
 - [Robust error handling in Bash](/ideas/robust-error-handling), 2nd of July 2020
@@ -8,9 +12,7 @@
 - [Simple snapshot testing in Bash](/ideas/snapshot-testing)
 - [Exception-style error handling in Bash](/ideas/exceptions)
 
----
-
-## Good Sources
+## Some People I've Learned From
 
 - [Gilles on Stack Exchange](https://unix.stackexchange.com/users/885/gilles)
 - [Victor Gaydov](https://gavv.github.io/articles/file-locks/)
