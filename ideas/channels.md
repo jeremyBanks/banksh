@@ -1,11 +1,9 @@
 ---
 title: Go-inspired channels in Bash
-published: false
 description: 
 tags: bash, linux
 dev_community_url: https://dev.to/banks/bash-channels-subshell-communication-4p6h-temp-slug-5552669?preview=3b2770d1bddcafeef41b23fc68799efa4962e2c2bd534781581d191ac7986c6142bd8af51032b756ba3521898361fff441bab593e6fee565c6672591
 posterity_url: https://banksh.jeremy.ca/ideas/robust-error-handling
-cover_image: null
 ---
 
 Go-inspired channels in Bash
