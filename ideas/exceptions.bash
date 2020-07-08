@@ -11,7 +11,7 @@ or [hire me]
 
 With the typical `-euo pipefail` error options enabled, unhandled errors in
 Bash scripts are propagated up the call stack until they're handled or exit the
-script (see [details below][A1] if you're unfamiliar). However, the only
+script (see [* Robust error handling in Bash](https://dev.to/banks/stop-ignoring-errors-in-bash-3co5*) if you're unfamiliar). However, the only
 associated data is the exit status code: less than a byte of information. This
 works, but if you want to handle different types of errors separately, you may
 find yourself writing a lot of boilerplate.

@@ -30,6 +30,7 @@ function declare-channel {
   rm "$tmp_path"
 
   declare -gi "${name}=${fd}"
+  declare -gi "${name}_lock=${tmp_path}.lock"
 
   # "Unsafe" here refers to a lack of concurrency guarauntees -- if multiple
   # processes are both reading or both writing at the same time, the results
@@ -76,8 +77,8 @@ function declare-channel {
   # Closes the file descriptor and unsets its variable and functions.
   eval "function ${name}.drop {
     eval \"exec \$${name}>&-\"
-    unset ${name}
-    unset -f ${name}{,.{{send,{,try-}recv}{,-unsafe},drop}}
+    unset \"${name}\" \"${name}_lock\"
+    unset -f \"${name}\"{,.{{send,{,try-}recv}{,-unsafe},drop}}
   }"
 }
 
