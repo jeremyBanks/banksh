@@ -6,18 +6,11 @@ source /dev/null && eval "$(
 # Installs/updates .banksh as a git subtree in another repository.
 # https://github.com/git/git/blob/master/contrib/subtree/git-subtree.txt
 
-if [[ "$__owd__" == "$__dir__" ]]; then
-  echo "FATAL: Run this from the root of a repo you want to install/update into."
-  exit 1
-fi
-
 set -x
 
 cd "$__owd__"
-
-# Ensure we're at the root of a git repository
-test -d .git
-git status
+repo="$(git rev-parse --show-toplevel)"
+cd "$repo"
 
 declare path=.banksh
 declare repo=https://github.com/jeremyBanks/banksh
