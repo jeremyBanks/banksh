@@ -1,6 +1,6 @@
 #!/bin/bash
-eval "$(cat "$(dirname -- "$0")/.banksh/lib/base")"
-# shellcheck source=.banksh/lib/base
+eval "$(cat "$(dirname -- "$0")/lib/base")"
+# shellcheck source=lib/base
 source /dev/null
 
 # Installs/updates .banksh as a git subtree in another repository.
@@ -23,10 +23,20 @@ declare path=.banksh
 declare repo=https://github.com/jeremyBanks/banksh
 declare head=HEAD
 
-if [[ ! -d $path ]]; then
-  git subtree add --squash --prefix="$path" "$repo" "$head"
+if [[ $(git status --porcelain) ]]; then
+  echo ".banksh/update error: working tree must be clean"
+  git status
+  exit 1
+fi
+
+if [[ -d $path ]]; then
+  if ! GIT_EDITOR="bash -c '(git log -1 --pretty=%B HEAD^2 || git log -1 --pretty=%B HEAD^1) > \"\$1\"' --" git subtree pull --squash --prefix="$path" "$repo" "$head"; then
+    git rm -rf .banksh
+    git commit .banksh -m "Removed '.banksh/'"
+    git subtree add --squash --prefix="$path" "$repo" "$head"
+  fi
 else
-  GIT_EDITOR="bash -c 'git log -1 --pretty=%B HEAD^2 > \"\$1\"' --" git subtree pull --squash --prefix="$path" "$repo" "$head"
+  git subtree add --squash --prefix="$path" "$repo" "$head"
 fi
 
 git --no-pager log --graph --all --decorate -n8 --oneline
