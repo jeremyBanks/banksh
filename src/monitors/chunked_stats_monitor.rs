@@ -83,6 +83,10 @@ impl Monitor for ChunkedStatsMonitor {
     }
 
     fn pending(&mut self) -> anyhow::Result<Vec<String>> {
+        if self.requests_time_range.is_none() {
+            return Ok(Vec::new());
+        }
+
         let range = self.requests_time_range.as_ref().unwrap();
 
         let start = NaiveDateTime::from_timestamp(range.start.try_into().unwrap(), 0);
