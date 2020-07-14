@@ -7,12 +7,7 @@ declare parents
 declare tree
 declare is_root=""
 if [[ ${GIT_COMMIT-} ]]; then
-    echo >&2
-    echo >&2 "GIT_COMMIT=$GIT_COMMIT"
-    echo >&2 "GIT_PARENTS=$GIT_PARENTS"
-    echo >&2 "GIT_ORIGINAL_PARENTS=$GIT_ORIGINAL_PARENTS"
-
-    message_prefix=''
+    message_prefix="${GIT_MESSAGE_PREFIX:-}"
 
     declare parents="$GIT_PARENTS"
 
@@ -27,7 +22,7 @@ else
     cd "$repo"
     git config alias.wip '!.banksh/bin/git-wip'
 
-    message_prefix='wip '
+    message_prefix="${GIT_MESSAGE_PREFIX:-wip }"
 
     parents="$(git rev-parse HEAD)"
 
@@ -36,8 +31,6 @@ else
     tree="$(git write-tree)"
 fi
 
-echo >&2 "is_root=$is_root"
-echo >&2 "parents=$parents"
 
 function icao-hex  {
     declare letters="$*"
@@ -77,14 +70,9 @@ icao_tree="$(icao-hex "${tree:0:4}")"
 declare -i generation=0
 if [[ ! "$is_root" ]]; then
     for parent in $parents; do
-        echo >&2 "parent=$parent"
-        declare -a git_roots
-        git_roots=($(git rev-list --max-parents=0 $parent))
-        for root in "${git_roots[@]}"; do
-            echo >&2 "root=$root"
+        for root in $(git rev-list --max-parents=0 "$parent"); do
             declare -i parent_generation_from_root
             parent_generation_from_root="$(git rev-list --count --ancestry-path "$root".."$parent")"
-            echo >&2 "parent_generation_from_root=$parent_generation_from_root"
             if ((parent_generation_from_root >= generation)); then
                 generation=$((parent_generation_from_root + 1))
             fi
@@ -92,12 +80,10 @@ if [[ ! "$is_root" ]]; then
     done
 fi
 
-echo >&2 "generation=$generation"
 
 declare message
 message="${message_prefix}r$generation $icao_tree"
 
-echo >&2 "message=$message"
 
 declare -i tick=256
 declare -i step=16384
