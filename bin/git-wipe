@@ -22,6 +22,11 @@ fi
 declare commit_count
 commit_count="$(git rev-list --count ${upstream_ref:+--ancestry-path $upstream_ref..}HEAD)"
 
+if [[ $commit_count = 0 ]]; then 
+    echo "No commits would be affected."
+    exit 1
+fi
+
 echo "$(tput bold; tput setaf 1)This will wipe all messages and authors, and smear timestamps, from all $commit_count commits${upstream_ref:+" that haven't been pushed to $upstream_ref"}.$(tput sgr0)"
 echo
 printf "%s" "Please wait a moment and confirm that this is what you want to do."
@@ -60,9 +65,9 @@ wipe_env="
 export GIT_ORIGINAL_PARENTS
 GIT_ORIGINAL_PARENTS=\$(git log --pretty=%P -1 \$GIT_COMMIT)
 export GIT_PARENTS="'"'"\$GIT_ORIGINAL_PARENTS"'"'"
-if [[ ! -z "'"'"\$GIT_PARENTS"'"'" ]]; then
+if [ ! -z "'"'"\$GIT_PARENTS"'"'" ]; then
     GIT_PARENTS="'"'"\$(map \${GIT_ORIGINAL_PARENTS})"'"'"
-else
+fi
 
 export GIT_AUTHOR_NAME="'"'"$GIT_AUTHOR_NAME"'"'"
 export GIT_AUTHOR_EMAIL="'"'"$GIT_AUTHOR_EMAIL"'"'"
