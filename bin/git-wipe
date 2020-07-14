@@ -10,7 +10,7 @@ git config alias.wipe '!.banksh/bin/git-wipe'
 declare upstream_ref
 upstream_ref="$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")"
 
-echo "$(tput bold; tput setaf 1)This will wipe all commits' messages and authors, and smear timestamps.$(tput sgr0)"
+echo "$(tput bold; tput setaf 1)This will wipe all messages and authors, and smear timestamps, from all commits${upstream_ref:+" that haven't been pushed to $upstream_ref"}.$(tput sgr0)"
 echo
 printf "%s" "Please wait a moment and confirm that this is what you want to do."
 while read -s -n 1 -t 4 -r; do
@@ -54,10 +54,6 @@ export GIT_AUTHOR_EMAIL="'"'"$GIT_AUTHOR_EMAIL"'"'"
 export GIT_COMMITTER_NAME="'"'"$GIT_COMMITTER_NAME"'"'"
 export GIT_COMMITTER_EMAIL="'"'"$GIT_COMMITTER_EMAIL"'"'"
 eval "'"'"\$(bash $git_wip)"'"'""
-
-# I think multiple parents is fucking it up.
-# fix that. we only care about the first parent?
-# or make it aware
 
 export FILTER_BRANCH_SQUELCH_WARNING=true
 
