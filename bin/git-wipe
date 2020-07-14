@@ -7,6 +7,9 @@ repo="$(git rev-parse --show-toplevel)"
 cd "$repo"
 git config alias.wipe '!.banksh/bin/git-wipe'
 
+declare upstream_ref
+upstream_ref="$(git for-each-ref --format='%(upstream:short)' "$(git symbolic-ref -q HEAD)")"
+
 echo "$(tput bold; tput setaf 1)This will wipe all commits' messages and authors, and smear timestamps.$(tput sgr0)"
 echo
 printf "%s" "Please wait a moment and confirm that this is what you want to do."
@@ -59,7 +62,7 @@ eval "'"'"\$(bash $git_wip)"'"'""
 export FILTER_BRANCH_SQUELCH_WARNING=true
 
 git --no-pager log --format=raw --graph --decorate -n 2 "$wiped"
-git filter-branch --force --env-filter "${wipe_env}" --msg-filter "${wipe_env}; echo \${GIT_COMMIT_MESSAGE}" ${1+--tree-filter "$*"}
+git filter-branch --force --env-filter "${wipe_env}" --msg-filter "${wipe_env}; echo \${GIT_COMMIT_MESSAGE}" ${1:+--tree-filter "$*"} ${upstream_ref:+"$upstream_ref..HEAD"}
 git --no-pager log --format=raw --graph --decorate -n 2
 
 rm -rf "$git_wip"
