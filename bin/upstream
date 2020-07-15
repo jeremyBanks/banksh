@@ -1,0 +1,24 @@
+#!/bin/bash
+# shellcheck source=../.banksh/lib/base
+source /dev/null && eval "$(
+  cat "$(dirname "$(realpath -- "$0")")/../.banksh/lib/base" || echo exit 1)"
+
+# Pushes changes from local .banksh back to upstream, if we have permission.
+
+set -x
+
+cd "$__owd__"
+repo="$(git rev-parse --show-toplevel)"
+cd "$repo"
+
+declare path=.banksh
+declare repo=https://github.com/jeremyBanks/banksh
+declare head=HEAD
+
+if [[ $(git status --porcelain) ]]; then
+  echo ".banksh/upstream error: working tree must be clean"
+  git status
+  exit 1
+fi
+
+git subtree push --prefix="$path" "$repo" "$head"

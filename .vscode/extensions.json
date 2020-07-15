@@ -1,9 +1,0 @@
-{
-  "recommendations": [
-    "eamodio.gitlens",
-    "johnpapa.vscode-peacock",
-    "matklad.rust-analyzer",
-    "rust-lang.rust",
-    "vadimcn.vscode-lldb"
-  ]
-}

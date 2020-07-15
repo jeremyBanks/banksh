@@ -1,0 +1,6 @@
+stderr:
+ERROR: message length (16387) exceeds maximum (16384)
+
+stdout:
+
+status: 0

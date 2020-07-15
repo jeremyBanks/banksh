@@ -1,0 +1,131 @@
+#!/bin/bash
+set -euo pipefail
+shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
+
+declare message_prefix
+declare parents
+declare tree
+declare is_root=""
+if [[ ${GIT_COMMIT-} ]]; then
+    message_prefix="${GIT_MESSAGE_PREFIX:-}"
+
+    declare parents="$GIT_PARENTS"
+
+    if [[ ! $parents ]]; then
+        is_root=true
+    fi
+
+    tree="$(git rev-parse "$GIT_COMMIT^{tree}")"
+else
+    declare repo
+    repo="$(git rev-parse --show-toplevel)"
+    cd "$repo"
+    git config alias.wip '!.banksh/bin/git-wip'
+
+    message_prefix="${GIT_MESSAGE_PREFIX:-wip }"
+
+    parents="$(git rev-parse HEAD)"
+
+    git add .
+
+    tree="$(git write-tree)"
+fi
+
+
+function icao-hex  {
+    declare letters="$*"
+    for ((i=0; i<${#letters}; i++)); do
+        if ((i > 0)); then
+            printf " "
+        fi
+        declare letter="${letters:$i:1}"
+        declare phono
+        phono="${icao_hex[$letter]}"
+        printf "%s" "$phono"
+    done
+}
+
+declare -rA icao_hex=(
+    [0]=zero
+    [1]=one
+    [2]=two
+    [3]=three
+    [4]=four
+    [5]=five
+    [6]=six
+    [7]=seven
+    [8]=eight
+    [9]=nine
+    [a]=alfa
+    [b]=bravo
+    [c]=charlie
+    [d]=delta
+    [e]=echo
+    [f]=foxtrot
+)
+
+declare icao_tree
+icao_tree="$(icao-hex "${tree:0:4}")"
+
+declare -i generation=0
+if [[ ! "$is_root" ]]; then
+    for parent in $parents; do
+        for root in $(git rev-list --max-parents=0 "$parent"); do
+            declare -i parent_generation_from_root
+            parent_generation_from_root="$(git rev-list --count --ancestry-path "$root".."$parent")"
+            if ((parent_generation_from_root >= generation)); then
+                generation=$((parent_generation_from_root + 1))
+            fi
+        done
+    done
+fi
+
+
+declare message
+message="${message_prefix}r$generation $icao_tree"
+
+
+declare -i tick=256
+declare -i step=16384
+declare -i drift=32768
+((0 == (step % tick)))
+((step >= tick))
+((drift >= step))
+
+declare -i parent_timestamp=0
+for parent in $parents; do
+    declare -i this_parent_timestamp
+    this_parent_timestamp="$(git log --format=%ct -1 "$parent")"
+    if ((this_parent_timestamp > parent_timestamp)); then ((
+        parent_timestamp = this_parent_timestamp
+    )); fi
+done
+
+declare current_timestamp
+if [[ ${GIT_COMMIT-} ]]; then
+    current_timestamp="$(git log --format=%ct -1 "$GIT_COMMIT")"
+else
+    current_timestamp="$(date +%s)"
+fi
+
+declare -i timestamp
+if [[ "${GIT_COMMIT-}" && "${is_root}" ]]; then
+    timestamp="$current_timestamp"
+elif ((current_timestamp - parent_timestamp > drift)); then
+    timestamp=$((current_timestamp - (current_timestamp % step)))
+else
+    timestamp=$((parent_timestamp + tick - (parent_timestamp % tick)))
+fi
+declare date
+date="$(date -ud @"$timestamp")"
+
+export GIT_COMMITTER_DATE="$date"
+export GIT_AUTHOR_DATE="$date"
+export GIT_COMMIT_MESSAGE="$message"
+
+if [[ ${GIT_COMMIT-} ]]; then
+    export | grep "declare -x GIT_" | sed 's/^declare -x /export /g'
+else
+    git commit --quiet -m "$message"
+    git --no-pager log --format=raw --graph --decorate -n 2
+fi

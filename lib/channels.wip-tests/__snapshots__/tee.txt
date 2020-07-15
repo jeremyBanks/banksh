@@ -1,0 +1,7 @@
+stderr:
+
+stdout:
+parent done
+
+subshell done
+status: 0
