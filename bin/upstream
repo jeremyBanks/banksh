@@ -12,8 +12,10 @@ repo="$(git rev-parse --show-toplevel)"
 cd "$repo"
 
 declare path=.banksh
-declare repo=https://github.com/jeremyBanks/banksh
-declare head=HEAD
+declare repo=git@github.com:jeremyBanks/banksh.git
+declare tree
+tree="$(git write-tree --prefix "$path")"
+declare head="upstreamed/${tree:0:4}"
 
 if [[ $(git status --porcelain) ]]; then
   echo ".banksh/upstream error: working tree must be clean"

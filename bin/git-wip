@@ -7,7 +7,7 @@ declare parents
 declare tree
 declare is_root=""
 if [[ ${GIT_COMMIT-} ]]; then
-    message_prefix="${GIT_MESSAGE_PREFIX:-}"
+    message_prefix="${GIT_MESSAGE_PREFIX-}"
 
     declare parents="$GIT_PARENTS"
 
@@ -22,7 +22,7 @@ else
     cd "$repo"
     git config alias.wip '!.banksh/bin/git-wip'
 
-    message_prefix="${GIT_MESSAGE_PREFIX:-wip }"
+    message_prefix="${GIT_MESSAGE_PREFIX-wip }"
 
     parents="$(git rev-parse HEAD)"
 
