@@ -37,6 +37,10 @@ declare expected
 declare -i passes=0
 declare -i failures=0
 for suite in **/{__tests__,*.{test,spec}{,s}}/; do
+  if [[ $suite =~ (^|/)\.banksh($|/) ]]; then
+    continue
+  fi
+
   cd "$suite"
   rm -rf __snapshots_actual__
   mkdir -p __snapshots_actual__ __snapshots__
