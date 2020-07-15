@@ -1,7 +1,0 @@
-stderr:
-
-stdout:
-32
-0
--8
-status: 0

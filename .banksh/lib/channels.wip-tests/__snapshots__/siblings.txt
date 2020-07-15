@@ -1,9 +1,0 @@
-stderr:
-
-stdout:
-testing that two child shells can exchange messages with each other
-in this case using the same channel, even though that's a bad idea
-subshell 2 done
-subshell 1 done
-parent done
-status: 0

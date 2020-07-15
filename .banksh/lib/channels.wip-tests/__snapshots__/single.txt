@@ -1,8 +1,0 @@
-stderr:
-single.spec.bash: line 35: sanity_check: unbound variable
-single.spec.bash: line 36: sanity_check.send: command not found
-single.spec.bash: line 38: sanity_check.drop: command not found
-
-stdout:
-
-status: 0
