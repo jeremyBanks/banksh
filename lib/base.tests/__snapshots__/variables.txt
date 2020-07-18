@@ -1,0 +1,29 @@
+stderr:
+
+stdout:
+enabled options (set & shopt):
+braceexpand
+checkwinsize
+cmdhist
+compat42
+complete_fullquote
+errexit
+errtrace
+expand_aliases
+extquote
+force_fignore
+functrace
+globasciiranges
+globstar
+hashall
+hostcomplete
+interactive-comments
+interactive_comments
+monitor
+noclobber
+nounset
+nullglob
+pipefail
+progcomp
+promptvars
+status: 0
