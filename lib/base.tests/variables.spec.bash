@@ -11,4 +11,4 @@ source /dev/null && eval "$(
 [[ -f $__dir__/$__name__ ]]
 
 echo "enabled options (set & shopt):"
-(set -o && shopt) | grep -oP '^\S+(?=\s+on$)' | sort
+(set -o && shopt) | grep -oP '^\S+(?=\s+on$)' | grep -vP '^checkwinsize$' | sort

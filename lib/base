@@ -15,9 +15,12 @@
   # shellcheck disable=SC2034
   declare -r BASH_COMPAT=4.2
 
+  declare -x LC_ALL=C.UTF-8
+  declare -x LANGUAGE=
+
   set -o monitor -o pipefail -o errexit -o errtrace -o functrace -o nounset -o noclobber
   shopt -s nullglob globstar expand_aliases
-  shopt -u sourcepath
+  shopt -u sourcepath globasciiranges
 }
 
 { # Declare global constants.
@@ -30,7 +33,7 @@
   declare -r __owd__ __file__ __name__ __dir__ __argv__
 }
 
-{ # Set working directory.
+{ # Set working directorylo.
   cd "${__dir__}"
 }
 

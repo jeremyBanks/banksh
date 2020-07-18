@@ -3,7 +3,6 @@ stderr:
 stdout:
 enabled options (set & shopt):
 braceexpand
-checkwinsize
 cmdhist
 compat42
 complete_fullquote
@@ -13,7 +12,6 @@ expand_aliases
 extquote
 force_fignore
 functrace
-globasciiranges
 globstar
 hashall
 hostcomplete
