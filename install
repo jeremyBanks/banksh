@@ -1,1 +1,10 @@
-bin/update
+#!/bin/bash
+# wget https://banksh.jeremy.ca/install -O- | bash -
+# standalone script to install .banksh into current repository via ~/.banksh
+set -euo pipefail
+shopt -s inherit_errexit compat"${BASH_COMPAT=32}"
+
+git clone https://github.com/jeremyBanks/banksh/ ~/.banksh ||
+  git pull --ff-only ~/.banksh
+
+~/.banksh/update
