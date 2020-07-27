@@ -1,7 +1,8 @@
-{
-  tasks: [
-    {
-      command: 'export PATH="$PATH:$PWD/bin"'
-    }
-  ]
-}
+tasks:
+    - before: |
+        alias g=git
+        git config alias.l 'log --graph --all --decorate'
+        git config alias.uncommit '!.banksh/bin/git-uncommit'
+        git config alias.c '!GIT_MESSAGE_PREFIX= .banksh/bin/git-wip'
+        git config alias.wip '!.banksh/bin/git-wip'
+        git config alias.wipe '!.banksh/bin/git-wipe'
