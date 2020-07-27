@@ -1,5 +1,7 @@
 stderr:
+hello underworld
+Failed with exit status 42.
 
 stdout:
-
-status: 0
+hello world
+status: 42

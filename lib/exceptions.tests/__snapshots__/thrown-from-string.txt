@@ -1,5 +1,11 @@
 stderr:
+Traceback (most recent call last):
+  File "thrown-from-string.spec.bash", line 13
+    main
+  File "thrown-from-string.spec.bash", line 5, in main
+    s="hello $(get-name)"
+UnknownStatus69Error: Command 's="hello $(get-name)"' failed with status 69.
 
 stdout:
 
-status: 0
+status: 69

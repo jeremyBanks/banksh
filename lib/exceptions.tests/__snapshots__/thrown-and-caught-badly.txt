@@ -1,5 +1,6 @@
 stderr:
+Failed with exit status 69.
 
 stdout:
-
-status: 0
+Oops, we gave the wrong type to gamma! (TypeError: got a cat when we expected a dog)
+status: 69

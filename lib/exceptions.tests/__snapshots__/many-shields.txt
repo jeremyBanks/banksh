@@ -1,5 +1,9 @@
 stderr:
 
 stdout:
-
+hello    
+salut
+goodbye    
+goodbye    
+goodbye
 status: 0

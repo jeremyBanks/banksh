@@ -1,5 +1,18 @@
 stderr:
+undecorated-error.spec.bash: line 16: ten-four: command not found
+Traceback (most recent call last):
+  File "undecorated-error.spec.bash", line 19
+    alpha
+  File "undecorated-error.spec.bash", line 4, in alpha
+    beta -v2
+  File "undecorated-error.spec.bash", line 8, in beta
+    gamma -m "hello"
+  File "undecorated-error.spec.bash", line 12, in gamma
+    delta --diffstat
+  File "undecorated-error.spec.bash", line 16, in delta
+    ten-four @roger
+UnknownStatus127Error: Command 'ten-four @roger' failed with status 127.
 
 stdout:
 
-status: 0
+status: 127

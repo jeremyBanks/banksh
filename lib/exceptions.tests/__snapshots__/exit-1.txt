@@ -1,5 +1,6 @@
 stderr:
+Failed with exit status 1.
 
 stdout:
 
-status: 0
+status: 1

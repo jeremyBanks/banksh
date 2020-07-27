@@ -1,5 +1,12 @@
 stderr:
+Traceback (most recent call last):
+  File "thrown-from-string-shielded.spec.bash", line 11
+    main
+  File "thrown-from-string-shielded.spec.bash", line 4, in main
+    shield echo "hello $(get-name)"
+  File "thrown-from-string-shielded.spec.bash", line 333, in shield
+UnknownStatus69Error: Command 'return "${1?}"' failed with status 69.
 
 stdout:
 
-status: 0
+status: 69
