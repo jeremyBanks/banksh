@@ -1,0 +1,7 @@
+{
+  tasks: [
+    {
+      command: 'export PATH="$PATH:$PWD/bin"'
+    }
+  ]
+}
